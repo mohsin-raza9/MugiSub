@@ -1,0 +1,401 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+}
+
+// ==========================================
+// Better Auth Core Models
+// ==========================================
+
+model User {
+  id            String    @id @default(uuid())
+  name          String
+  email         String    @unique
+  emailVerified Boolean
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+  
+  // Custom user fields
+  role          String    @default("user") // "user" | "moderator" | "admin"
+  signature     String?
+  
+  // Better Auth Relations
+  sessions      Session[]
+  accounts      Account[]
+  
+  // MugiSub Relations
+  mylist        MyListEntry[]
+  favorites     Favorite[]
+  reviews       Review[]
+  votes         Vote[]
+  newsPosts     NewsPost[]
+  threads       ForumThread[]
+  forumPosts    ForumPost[]
+  editRequests  EditRequest[]
+}
+
+model Session {
+  id        String   @id @default(uuid())
+  expiresAt DateTime
+  token     String   @unique
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  ipAddress String?
+  userAgent String?
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Account {
+  id                    String    @id @default(uuid())
+  accountId             String
+  providerId            String
+  userId                String
+  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken           String?
+  refreshToken          String?
+  idToken               String?
+  expiresAt             DateTime?
+  password              String?
+  createdAt             DateTime  @default(now())
+  updatedAt             DateTime  @updatedAt
+}
+
+model Verification {
+  id         String    @id @default(uuid())
+  identifier String
+  value      String
+  expiresAt  DateTime
+  createdAt  DateTime? @default(now())
+  updatedAt  DateTime? @updatedAt
+}
+
+// ==========================================
+// Anime Catalog Models
+// ==========================================
+
+model Anime {
+  id            String    @id @default(uuid())
+  titleRomaji   String
+  titleEnglish  String?
+  titleJapanese String?
+  description   String?
+  type          String    // "TV Series", "Movie", "OVA", "Web", "Special"
+  status        String    // "Airing", "Finished", "Upcoming"
+  airDate       String?   // e.g., "1st April" or "17.05.2026"
+  endDate       String?
+  image         String?
+  episodesCount Int?
+  rating        Float?
+  ratingCount   Int       @default(0)
+  average       Float?
+  averageCount  Int       @default(0)
+  
+  // Relations
+  studios      AnimeStudio[]
+  episodes     Episode[]
+  characters   AnimeCharacter[]
+  songs        Song[]
+  favorites    Favorite[]
+  tags         AnimeTag[]
+  reviews      Review[]
+  votes        Vote[]
+  collections  AnimeCollection[]
+}
+
+model Studio {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  image       String?
+  anime       AnimeStudio[]
+}
+
+model AnimeStudio {
+  animeId  String
+  studioId String
+  anime    Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  studio   Studio  @relation(fields: [studioId], references: [id], onDelete: Cascade)
+
+  @@id([animeId, studioId])
+}
+
+model Episode {
+  id            String          @id @default(uuid())
+  animeId       String
+  episodeNumber Int
+  title         String?
+  lengthMinutes Int?
+  airDate       String?
+  anime         Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  releases      ReleaseFile[]
+  mylistEntries MyListEntry[]
+}
+
+// ==========================================
+// Fansub Releases Models
+// ==========================================
+
+model FansubGroup {
+  id          String        @id @default(uuid())
+  name        String        @unique
+  description String?
+  website     String?
+  releases    ReleaseFile[]
+}
+
+model ReleaseFile {
+  id                 String      @id @default(uuid())
+  episodeId          String
+  groupId            String
+  format             String      // "mkv", "mp4", etc.
+  resolution         String      // "1080p", "720p", "unk"
+  languages          String[]    // e.g. ["ja", "en"]
+  downloadUrl        String?
+  isNew              Boolean     @default(true)
+  createdAt          DateTime    @default(now())
+  
+  episode            Episode     @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  group              FansubGroup @relation(fields: [groupId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// Characters & Staff Models
+// ==========================================
+
+model Character {
+  id          String           @id @default(uuid())
+  name        String
+  gender      String?          // "female", "male", "other"
+  description String?
+  image       String?
+  rating      Float?
+  ratingCount Int              @default(0)
+  trashPercent Float           @default(0.0) // waifu trash rating percentage
+  haremCount  Int              @default(0)
+  
+  // Relations
+  anime       AnimeCharacter[]
+  favorites   Favorite[]
+  tags        CharacterTag[]
+  votes       Vote[]
+}
+
+model AnimeCharacter {
+  animeId     String
+  characterId String
+  role        String          // "Main", "Supporting"
+  vaId        String?         // Voice Actor Creator ID
+  anime       Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  character   Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  voiceActor  Creator?        @relation(fields: [vaId], references: [id])
+
+  @@id([animeId, characterId])
+}
+
+model Creator {
+  id          String           @id @default(uuid())
+  name        String
+  role        String?          // e.g. "Voice Actor", "Director", "Author"
+  bio         String?
+  image       String?
+  
+  voicedCharacters AnimeCharacter[]
+}
+
+// ==========================================
+// Songs & Collections & Tags Models
+// ==========================================
+
+model Song {
+  id        String  @id @default(uuid())
+  animeId   String
+  title     String
+  type      String  // "OP", "ED", "Insert"
+  number    Int?    // e.g. OP 1
+  artist    String?
+  anime     Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+}
+
+model Collection {
+  id          String            @id @default(uuid())
+  name        String            @unique
+  description String?
+  anime       AnimeCollection[]
+}
+
+model AnimeCollection {
+  animeId      String
+  collectionId String
+  anime        Anime      @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
+
+  @@id([animeId, collectionId])
+}
+
+model Tag {
+  id          String         @id @default(uuid())
+  name        String         @unique
+  description String?
+  parentId    String?
+  parent      Tag?           @relation("TagHierarchy", fields: [parentId], references: [id])
+  subtags     Tag[]          @relation("TagHierarchy")
+  anime       AnimeTag[]
+  characters  CharacterTag[]
+}
+
+model AnimeTag {
+  animeId String
+  tagId   String
+  anime   Anime  @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([animeId, tagId])
+}
+
+model CharacterTag {
+  characterId String
+  tagId       String
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
+  tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([characterId, tagId])
+}
+
+// ==========================================
+// Mylist & Personal Activity Models
+// ==========================================
+
+model MyListEntry {
+  id          String   @id @default(uuid())
+  userId      String
+  episodeId   String
+  watchStatus String   // "completed", "watching", "on-hold", "plan-to-watch", "dropped"
+  storageType String?  // "local", "cloud", "external"
+  rating      Int?     // 1 to 10
+  notes       String?
+  updatedAt   DateTime @updatedAt
+  
+  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  episode     Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  
+  @@unique([userId, episodeId])
+}
+
+model Favorite {
+  id          String     @id @default(uuid())
+  userId      String
+  animeId     String?
+  characterId String?
+  
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime       Anime?     @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  character   Character? @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, animeId, characterId])
+}
+
+model Review {
+  id        String   @id @default(uuid())
+  userId    String
+  animeId   String
+  title     String
+  content   String
+  rating    Int
+  createdAt DateTime @default(now())
+  
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime     Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  votes     Vote[]
+}
+
+model Vote {
+  id          String     @id @default(uuid())
+  userId      String
+  value       Int        // rating score or helpfulness vote
+  
+  animeId     String?
+  anime       Anime?     @relation(fields: [animeId], references: [id], onDelete: Cascade)
+
+  characterId String?
+  character   Character? @relation(fields: [characterId], references: [id], onDelete: Cascade)
+
+  reviewId    String?
+  review      Review?    @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+// ==========================================
+// News & Forums Models
+// ==========================================
+
+model NewsPost {
+  id        String   @id @default(uuid())
+  authorId  String
+  title     String
+  content   String
+  createdAt DateTime @default(now())
+  
+  author    User     @relation(fields: [authorId], references: [id], onDelete: Cascade)
+}
+
+model ForumCategory {
+  id          String        @id @default(uuid())
+  title       String        @unique
+  description String?
+  threads     ForumThread[]
+}
+
+model ForumThread {
+  id         String      @id @default(uuid())
+  categoryId String
+  creatorId  String
+  title      String
+  viewsCount Int         @default(0)
+  createdAt  DateTime    @default(now())
+  
+  category   ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
+  creator    User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
+  posts      ForumPost[]
+}
+
+model ForumPost {
+  id        String   @id @default(uuid())
+  threadId  String
+  authorId  String
+  content   String
+  parentId  String?
+  createdAt DateTime @default(now())
+  
+  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  parent    ForumPost?  @relation("PostReplies", fields: [parentId], references: [id])
+  replies   ForumPost[] @relation("PostReplies")
+}
+
+// ==========================================
+// Moderation & Edit Workflow Models
+// ==========================================
+
+model EditRequest {
+  id            String   @id @default(uuid())
+  userId        String
+  entityType    String   // "anime", "character", "creator"
+  entityId      String
+  fieldChanged  String
+  originalValue String?
+  proposedValue String?
+  status        String   // "pending", "approved", "rejected"
+  reviewerId    String?
+  createdAt     DateTime @default(now())
+  
+  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
