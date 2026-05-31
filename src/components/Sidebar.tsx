@@ -1,4 +1,8 @@
+'use client';
+
 import Link from "next/link";
+import { useState } from "react";
+import { authClient } from "@/lib/auth-client";
 import {
   Search,
   Calendar,
@@ -39,11 +43,42 @@ import {
   LogIn,
   UserPlus,
   ArrowRight,
+  LogOut,
 } from "lucide-react";
 
 
 export default function Sidebar() {
   const iconColor = "#3b5998";
+  const { data: session } = authClient.useSession();
+  
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleSidebarLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+    try {
+      await authClient.signIn.email({
+        email,
+        password,
+      }, {
+        onError: (ctx) => {
+          setError(ctx.error.message);
+        }
+      });
+    } catch (err: any) {
+      setError(err?.message || "Login failed");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+  };
 
   const sections = [
     {
@@ -140,60 +175,92 @@ export default function Sidebar() {
 
       {/* REGISTER OR LOGIN CARD */}
       <div className="w-127">
-        <div className="bg-[#2b2f3d] w-[130px] text-[#e1e5f0] font-bold uppercase tracking-wide px-2 py-[5px] border-b border-[#1f2635] text-[11px]">
-          REGISTER OR LOGIN
-        </div>
-        <div className="bg-[#bdbfc3] w-[127px] p-2 flex flex-col gap-1.5">
-          {/* Action Link Rows */}
-          <div className="flex flex-col gap-1">
-            <div className="flex items-center gap-1.5">
-              <LogIn size={11} color="#1f5da1" className="shrink-0" />
-              <Link href="/login" className="text-[12px] text-black hover:underline font-normal">
-                Login
-              </Link>
+        {session ? (
+          /* User Profile Logged-in View */
+          <>
+            <div className="bg-[#2b2f3d] w-[130px] text-[#e1e5f0] font-bold uppercase tracking-wide px-2 py-[5px] border-b border-[#1f2635] text-[11px]">
+              LOGGED IN
             </div>
-            <div className="flex items-center gap-1.5">
-              <UserPlus size={11} color="#1f5da1" className="shrink-0" />
-              <Link href="/register" className="text-[12px] text-black hover:underline font-normal">
-                Register
-              </Link>
+            <div className="bg-[#bdbfc3] w-[127px] p-2 flex flex-col gap-1 text-[11px] text-black">
+              <span className="font-bold truncate text-[#a11f1f]">{session.user.name}</span>
+              <span className="text-[10px] text-gray-700 truncate">{session.user.email}</span>
+              
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="w-full mt-2 bg-[#800] hover:bg-[#a00] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-[11px]"
+              >
+                <LogOut size={11} color="#ffffff" className="shrink-0" />
+                <span>Logout</span>
+              </button>
             </div>
-          </div>
+          </>
+        ) : (
+          /* Standard Login Form Form View */
+          <form onSubmit={handleSidebarLogin}>
+            <div className="bg-[#2b2f3d] w-[130px] text-[#e1e5f0] font-bold uppercase tracking-wide px-2 py-[5px] border-b border-[#1f2635] text-[11px]">
+              REGISTER OR LOGIN
+            </div>
+            <div className="bg-[#bdbfc3] w-[127px] p-2 flex flex-col gap-1.5">
+              {/* Action Link Rows */}
+              <div className="flex flex-col gap-1">
+                <div className="flex items-center gap-1.5">
+                  <LogIn size={11} color="#1f5da1" className="shrink-0" />
+                  <Link href="/auth" className="text-[12px] text-black hover:underline font-normal">
+                    Login / Register
+                  </Link>
+                </div>
+              </div>
 
-          {/* Form Fields */}
-          <div className="flex flex-col gap-1 mt-0.5">
-            <input
-              type="text"
-              defaultValue="Username or Email"
-              className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
-            />
-            <input
-              type="password"
-              defaultValue="Password"
-              className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
-            />
-          </div>
+              {/* Form Fields */}
+              <div className="flex flex-col gap-1 mt-0.5">
+                <input
+                  type="email"
+                  placeholder="Email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
+                />
+                <input
+                  type="password"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
+                />
+              </div>
 
-          {/* Remember Me / Stay Logged In */}
-          <div className="flex items-center gap-1.5">
-            <label className="flex items-center gap-1 select-none cursor-pointer">
-              <input
-                type="checkbox"
-                className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
-              />
-              <span className="text-[10px] text-black">stay logged in</span>
-            </label>
-          </div>
+              {error && (
+                <div className="text-red-700 text-[9px] font-bold bg-red-100 p-1 border border-red-300 max-w-full break-words">
+                  {error}
+                </div>
+              )}
 
-          {/* Login Button */}
-          <button
-            type="submit"
-            className="w-full bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-xs"
-          >
-            <ArrowRight size={12} color="#ffffff" className="shrink-0" />
-            <span>Login</span>
-          </button>
-        </div>
+              {/* Remember Me / Stay Logged In */}
+              <div className="flex items-center gap-1.5">
+                <label className="flex items-center gap-1 select-none cursor-pointer">
+                  <input
+                    type="checkbox"
+                    className="w-3 h-3 rounded border-gray-300 text-indigo-600 focus:ring-indigo-500"
+                  />
+                  <span className="text-[10px] text-black">stay logged in</span>
+                </label>
+              </div>
+
+              {/* Login Button */}
+              <button
+                type="submit"
+                disabled={loading}
+                className="w-full bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-xs disabled:opacity-50"
+              >
+                <ArrowRight size={12} color="#ffffff" className="shrink-0" />
+                <span>{loading ? "..." : "Login"}</span>
+              </button>
+            </div>
+          </form>
+        )}
       </div>
     </div>
   );
