@@ -161,11 +161,11 @@ export default function Home() {
 
   if (showAuth) {
     return (
-      <div className="w-full min-h-screen bg-[#f8f9fa] p-4">
+      <div className="w-full min-h-screen p-4">
         <button
           type="button"
           onClick={() => setShowAuth(false)}
-          className="mb-4 inline-flex items-center rounded-xl border border-gray-300 bg-white px-4 py-2 text-sm font-medium text-gray-700 shadow-sm hover:bg-gray-50"
+          className="mb-4 inline-flex items-center bg-[#cfd1d4] border border-[#999999] border-b-[#cfd1d4] px-3 py-1 text-[11px] text-[#1a2536] px-4 py-2 font-medium shadow-sm"
         >
           ← Back
         </button>
