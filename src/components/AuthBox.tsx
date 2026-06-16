@@ -1,84 +1,193 @@
 'use client';
 
-
-import { Link, ArrowRight } from 'lucide-react';
 import React, { useState } from 'react';
+import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
-interface LoginRegProps {
-  isInfo?: boolean;
-}
- 
-const AuthBox = ({ isInfo = false }: LoginRegProps) => {
+const AuthBox = () => {
+  const { data: session } = authClient.useSession();
+  const router = useRouter();
+
   const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await authClient.signIn.email({
+          email,
+          password,
+        }, {
+          onSuccess: () => {
+            router.push("/");
+          },
+          onError: (ctx) => {
+            setError(ctx.error.message);
+          }
+        });
+      } else {
+        await authClient.signUp.email({
+          email,
+          password,
+          name,
+        }, {
+          onSuccess: () => {
+            router.push("/");
+          },
+          onError: (ctx) => {
+            setError(ctx.error.message);
+          }
+        });
+      }
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+  };
 
   return (
-    <div className="min-h-screen bg-[#bdbfc3] flex items-center justify-center font-sans">
+    <div className="min-h-[400px] bg-[#bdbfc3] flex items-center justify-center font-sans p-4">
       {/* Main Container */}
-      <div className="w-full max-w-[380px] bg-[#bdbfc3] rounded-2xl shadow-lg overflow-hidden">
-
-
-        {/* Right column: Login / Register box */}
-        <div className={isInfo ? "w-[40%] flex flex-col" : "w-full flex flex-col"}>
-          <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm flex flex-col h-full">
-
+      <div className="w-full max-w-[380px] bg-[#bdbfc3] rounded-2xl shadow-lg overflow-hidden border border-[#999]">
+        
+        {session ? (
+          /* Profile / Welcome View if user is already logged in */
+          <div className="p-4 flex flex-col gap-3">
+            <div className="bg-[#2b2f3d] text-[#e1e5f0] font-bold uppercase tracking-wide px-3 py-1.5 text-[11px] mb-1">
+              Currently Logged In
+            </div>
+            <div className="text-[12px] text-black space-y-1.5 px-1">
+              <div>Logged in as: <strong className="text-[#a11f1f]">{session.user.name}</strong></div>
+              <div>Email: {session.user.email}</div>
+              <div>Role: <span className="bg-[#1f5da1] text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">{session.user.role || 'user'}</span></div>
+            </div>
+            <div className="flex gap-2 mt-4">
+              <button
+                type="button"
+                onClick={() => router.push("/")}
+                className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 font-bold text-[12px] transition-colors border border-[#2b2f3d]"
+              >
+                Go to Main Page
+              </button>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="bg-[#800] hover:bg-[#a00] text-white py-[5px] px-4 font-bold text-[12px] transition-colors border border-[#800]"
+              >
+                Log Out
+              </button>
+            </div>
+          </div>
+        ) : (
+          /* Authentication Form */
+          <form onSubmit={handleAuth} className="flex flex-col w-full">
             {/* Tab strip */}
-            <div className="flex w-full border-[#999999]">
-              <div className="flex-1 flex items-center justify-center py-1.5 bg-[#bdbfc3] border-r border-[#999999]">
-                <Link href="/login" className="text-black text-[15px] font-bold hover:underline">
-                  Login
-                </Link>
-              </div>
-              <div className="flex-1 flex items-center justify-center py-1.5 bg-[#800]">
-                <Link href="/register" className="text-[#cfd1d4] text-[15px] font-bold">
-                  Register
-                </Link>
-              </div>
+            <div className="flex w-full border-b border-[#999999]">
+              <button
+                type="button"
+                onClick={() => { setIsLogin(true); setError(""); }}
+                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${
+                  isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                }`}
+              >
+                Login
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsLogin(false); setError(""); }}
+                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${
+                  !isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                }`}
+              >
+                Register
+              </button>
             </div>
 
-            {/* Form */}
-            <div className="flex flex-col p-2 gap-1.5">
-              <div className="flex flex-col gap-1.5">
+            {/* Form Fields */}
+            <div className="flex flex-col p-4 gap-2.5">
+              <div className="flex flex-col gap-2">
+                {!isLogin && (
+                  <input
+                    type="text"
+                    placeholder="Name"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                    className="w-full bg-[#E8F0FE] border border-[#34394d] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
+                  />
+                )}
                 <input
-                  type="text"
-                  defaultValue="Username or email"
-                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                  type="email"
+                  placeholder="Email Address"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  required
+                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
                 />
                 <input
                   type="password"
-                  defaultValue="Password"
-                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                  placeholder="Password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  required
+                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
                 />
               </div>
 
-              <Link href="/forgot" className="text-[#1f5da1] hover:underline text-[12px]">
-                Forgot your username or password?
-              </Link>
+              {error && (
+                <div className="text-red-700 text-[11px] font-bold bg-red-100 p-1.5 border border-red-300">
+                  {error}
+                </div>
+              )}
 
-              <div className="flex items-center gap-1 mt-1 ">
-                <input
-                  type="checkbox"
-                  id="stayLoggedIn"
-                  defaultChecked
-                  className="w-3.5 h-3.5 cursor-pointer accent-[#2b2f3d]"
-                />
-                <label htmlFor="stayLoggedIn" className="text-[12px] text-black cursor-pointer select-none">
-                  stay logged me on next visit
-                </label>
-              </div>
+              {isLogin && (
+                <a href="#" onClick={(e) => e.preventDefault()} className="text-[#1f5da1] hover:underline text-[12px]">
+                  Forgot your username or password?
+                </a>
+              )}
 
-              <div className="flex justify-center mt-2">
+              {isLogin && (
+                <div className="flex items-center gap-1.5">
+                  <input
+                    type="checkbox"
+                    id="stayLoggedInBox"
+                    defaultChecked
+                    className="w-3.5 h-3.5 cursor-pointer accent-[#2b2f3d]"
+                  />
+                  <label htmlFor="stayLoggedInBox" className="text-[12px] text-black cursor-pointer select-none">
+                    stay logged me on next visit
+                  </label>
+                </div>
+              )}
+
+              <div className="flex justify-center mt-3">
                 <button
-                  type="button"
-                  className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 flex items-center justify-center gap-1.5 transition-colors border border-[#2b2f3d]"
+                  type="submit"
+                  disabled={loading}
+                  className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-2 px-6 flex items-center justify-center gap-2 transition-colors border border-[#2b2f3d] disabled:opacity-50 font-bold"
                 >
-                  <ArrowRight size={12} color="#ffffff" className="shrink-0" />
-                  <span className="text-[15px]">Login</span>
+                  <ArrowRight size={14} color="#ffffff" className="shrink-0" />
+                  <span className="text-[14px]">{loading ? "Processing..." : isLogin ? "Login" : "Register"}</span>
                 </button>
               </div>
             </div>
+          </form>
+        )}
 
-          </div>
-        </div>
       </div>
     </div>
   );

@@ -1,12 +1,61 @@
-import React from "react";
+'use client';
+
+import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowRight } from "lucide-react";
+import { authClient } from "@/lib/auth-client";
 
 interface LoginRegProps {
   isInfo?: boolean;
 }
 
 export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
+  const { data: session, isPending } = authClient.useSession();
+  
+  const [isLogin, setIsLogin] = useState(true);
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [name, setName] = useState("");
+  const [error, setError] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleAuth = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError("");
+    setLoading(true);
+
+    try {
+      if (isLogin) {
+        await authClient.signIn.email({
+          email,
+          password,
+        }, {
+          onError: (ctx) => {
+            setError(ctx.error.message);
+          }
+        });
+      } else {
+        await authClient.signUp.email({
+          email,
+          password,
+          name,
+        }, {
+          onError: (ctx) => {
+            setError(ctx.error.message);
+          }
+        });
+      }
+    } catch (err: any) {
+      setError(err?.message || "An unexpected error occurred");
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLogout = async () => {
+    await authClient.signOut();
+  };
+
   return (
     <div className="w-full font-sans text-[11px]">
 
@@ -48,67 +97,124 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
           </div>
         )}
 
-        {/* Right column: Login / Register box */}
+        {/* Right column: Login / Register / Profile box */}
         <div className={isInfo ? "w-[40%] flex flex-col" : "w-full flex flex-col"}>
-          <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm flex flex-col h-full">
-
-            {/* Tab strip */}
-            <div className="flex w-full border-[#999999]">
-              <div className="flex-1 flex items-center justify-center py-1.5 bg-[#bdbfc3] border-r border-[#999999]">
-                <Link href="/login" className="text-black text-[15px] font-bold hover:underline">
-                  Login
-                </Link>
+          {session ? (
+            /* Logged In View */
+            <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm flex flex-col h-full p-3 gap-2">
+              <div className="bg-[#2b2f3d] text-[#e1e5f0] font-bold uppercase tracking-wide px-2 py-1 text-[11px] mb-1">
+                Profile Info
               </div>
-              <div className="flex-1 flex items-center justify-center py-1.5 bg-[#800]">
-                <Link href="/register" className="text-[#cfd1d4] text-[15px] font-bold">
-                  Register
-                </Link>
+              <div className="text-[12px] text-black space-y-1">
+                <div>Logged in as: <strong className="text-[#a11f1f]">{session.user.name}</strong></div>
+                <div className="truncate">Email: {session.user.email}</div>
+                <div>Role: <span className="bg-[#1f5da1] text-white text-[9px] px-1.5 py-0.5 rounded font-bold uppercase">{session.user.role || 'user'}</span></div>
               </div>
+              <button
+                type="button"
+                onClick={handleLogout}
+                className="mt-4 bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 font-bold transition-colors border border-[#2b2f3d]"
+              >
+                Log Out
+              </button>
             </div>
+          ) : (
+            /* Logged Out Login/Register Form */
+            <form onSubmit={handleAuth} className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm flex flex-col h-full">
 
-            {/* Form */}
-            <div className="flex flex-col p-2 gap-1.5">
-              <div className="flex flex-col gap-1.5">
-                <input
-                  type="text"
-                  defaultValue="Username or email"
-                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
-                />
-                <input
-                  type="password"
-                  defaultValue="Password"
-                  className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
-                />
-              </div>
-
-              <Link href="/forgot" className="text-[#1f5da1] hover:underline text-[12px]">
-                Forgot your username or password?
-              </Link>
-
-              <div className="flex items-center gap-1 mt-1 ">
-                <input
-                  type="checkbox"
-                  id="stayLoggedIn"
-                  defaultChecked
-                  className="w-3.5 h-3.5 cursor-pointer accent-[#2b2f3d]"
-                />
-                <label htmlFor="stayLoggedIn" className="text-[12px] text-black cursor-pointer select-none">
-                  stay logged me on next visit
-                </label>
-              </div>
-
-              <div className="flex justify-center mt-2">
+              {/* Tab strip */}
+              <div className="flex w-full border-[#999999]">
                 <button
                   type="button"
-                  className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 flex items-center justify-center gap-1.5 transition-colors border border-[#2b2f3d]"
+                  onClick={() => { setIsLogin(true); setError(""); }}
+                  className={`flex-1 py-1.5 text-[15px] font-bold focus:outline-none transition-colors ${
+                    isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                  }`}
                 >
-                  <ArrowRight size={12} color="#ffffff" className="shrink-0" />
-                  <span className="text-[15px]">Login</span>
+                  Login
+                </button>
+                <button
+                  type="button"
+                  onClick={() => { setIsLogin(false); setError(""); }}
+                  className={`flex-1 py-1.5 text-[15px] font-bold focus:outline-none transition-colors ${
+                    !isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                  }`}
+                >
+                  Register
                 </button>
               </div>
-            </div>
 
-          </div>
+              {/* Form Body */}
+              <div className="flex flex-col p-2 gap-1.5">
+                <div className="flex flex-col gap-1.5">
+                  {!isLogin && (
+                    <input
+                      type="text"
+                      placeholder="Name"
+                      value={name}
+                      onChange={(e) => setName(e.target.value)}
+                      required
+                      className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                    />
+                  )}
+                  <input
+                    type="email"
+                    placeholder="Email address"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                    className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                  />
+                  <input
+                    type="password"
+                    placeholder="Password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                  />
+                </div>
+
+                {error && (
+                  <div className="text-red-700 text-[11px] font-bold bg-red-100 p-1 border border-red-300">
+                    {error}
+                  </div>
+                )}
+
+                {isLogin && (
+                  <Link href="/forgot" className="text-[#1f5da1] hover:underline text-[12px]">
+                    Forgot your username or password?
+                  </Link>
+                )}
+
+                {isLogin && (
+                  <div className="flex items-center gap-1 mt-1">
+                    <input
+                      type="checkbox"
+                      id="stayLoggedIn"
+                      defaultChecked
+                      className="w-3.5 h-3.5 cursor-pointer accent-[#2b2f3d]"
+                    />
+                    <label htmlFor="stayLoggedIn" className="text-[12px] text-black cursor-pointer select-none">
+                      stay logged me on next visit
+                    </label>
+                  </div>
+                )}
+
+                <div className="flex justify-center mt-2">
+                  <button
+                    type="submit"
+                    disabled={loading}
+                    className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 flex items-center justify-center gap-1.5 transition-colors border border-[#2b2f3d] disabled:opacity-50"
+                  >
+                    <ArrowRight size={12} color="#ffffff" className="shrink-0" />
+                    <span className="text-[15px]">{loading ? "Processing..." : isLogin ? "Login" : "Register"}</span>
+                  </button>
+                </div>
+              </div>
+
+            </form>
+          )}
         </div>
 
       </div>
