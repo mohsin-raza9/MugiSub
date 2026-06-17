@@ -1,45 +1,69 @@
 'use client';
 
 import React, { useState } from "react";
-import Link from "next/link";
 import { ArrowRight } from "lucide-react";
 import { authClient } from "@/lib/auth-client";
+import { useRouter } from "next/navigation";
 
 interface LoginRegProps {
   isInfo?: boolean;
 }
 
+type AuthMode = "login" | "register" | "forgot";
+
 export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
   const { data: session, isPending } = authClient.useSession();
+  const router = useRouter();
   
-  const [isLogin, setIsLogin] = useState(true);
+  const [mode, setMode] = useState<AuthMode>("login");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [name, setName] = useState("");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [successMsg, setSuccessMsg] = useState("");
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
+    setSuccessMsg("");
     setLoading(true);
 
     try {
-      if (isLogin) {
+      if (mode === "login") {
         await authClient.signIn.email({
           email,
           password,
         }, {
-          onError: (ctx) => {
+          onSuccess: () => {
+            router.push("/onboarding");
+          },
+          onError: (ctx: any) => {
             setError(ctx.error.message);
           }
         });
-      } else {
+      } else if (mode === "register") {
         await authClient.signUp.email({
           email,
           password,
           name,
         }, {
+          onSuccess: () => {
+            router.push("/onboarding");
+          },
+          onError: (ctx: any) => {
+            setError(ctx.error.message);
+          }
+        });
+      } else if (mode === "forgot") {
+        await authClient.requestPasswordReset({
+          email,
+          redirectTo: "/reset-password",
+        }, {
+          onSuccess: () => {
+            setSuccessMsg("Reset link sent! Check your email.");
+            setMode("login");
+          },
           onError: (ctx) => {
             setError(ctx.error.message);
           }
@@ -55,6 +79,27 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
   const handleLogout = async () => {
     await authClient.signOut();
   };
+
+  // Immediate pending verification modal
+  if (session?.user && !session.user.emailVerified) {
+    return (
+      <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-sans">
+        <div className="bg-[#bdbfc3] w-full max-w-[380px] rounded-sm border border-[#999] shadow-lg p-5 flex flex-col items-center text-center">
+          <h2 className="text-[18px] font-bold text-black mb-2">Verify Your Email</h2>
+          <p className="text-[13px] text-black mb-4">
+            We've sent a verification link to <strong className="text-[#a11f1f]">{session.user.email}</strong>. 
+            Please check your inbox (and spam folder) to verify your account.
+          </p>
+          <button
+            onClick={() => window.open('mailto:', '_blank')}
+            className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-2 px-6 font-bold text-[14px] transition-colors border border-[#2b2f3d]"
+          >
+            Go to Email
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full font-sans text-[11px]">
@@ -126,18 +171,18 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
               <div className="flex w-full border-[#999999]">
                 <button
                   type="button"
-                  onClick={() => { setIsLogin(true); setError(""); }}
+                  onClick={() => { setMode("login"); setError(""); setSuccessMsg(""); }}
                   className={`flex-1 py-1.5 text-[15px] font-bold focus:outline-none transition-colors ${
-                    isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                    mode === "login" || mode === "forgot" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
                   }`}
                 >
                   Login
                 </button>
                 <button
                   type="button"
-                  onClick={() => { setIsLogin(false); setError(""); }}
+                  onClick={() => { setMode("register"); setError(""); setSuccessMsg(""); }}
                   className={`flex-1 py-1.5 text-[15px] font-bold focus:outline-none transition-colors ${
-                    !isLogin ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                    mode === "register" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
                   }`}
                 >
                   Register
@@ -147,7 +192,7 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
               {/* Form Body */}
               <div className="flex flex-col p-2 gap-1.5">
                 <div className="flex flex-col gap-1.5">
-                  {!isLogin && (
+                  {mode === "register" && (
                     <input
                       type="text"
                       placeholder="Name"
@@ -165,14 +210,16 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
                     required
                     className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
                   />
-                  <input
-                    type="password"
-                    placeholder="Password"
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    required
-                    className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
-                  />
+                  {mode !== "forgot" && (
+                    <input
+                      type="password"
+                      placeholder="Password"
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      required
+                      className="w-full bg-[#E8F0FE] border border-[#34394d] px-1.5 py-[9px] text-[11px] text-black outline-none"
+                    />
+                  )}
                 </div>
 
                 {error && (
@@ -180,14 +227,25 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
                     {error}
                   </div>
                 )}
-
-                {isLogin && (
-                  <Link href="/forgot" className="text-[#1f5da1] hover:underline text-[12px]">
-                    Forgot your username or password?
-                  </Link>
+                {successMsg && (
+                  <div className="text-green-800 text-[11px] font-bold bg-green-100 p-1 border border-green-300">
+                    {successMsg}
+                  </div>
                 )}
 
-                {isLogin && (
+                {mode === "login" && (
+                  <a href="#" onClick={(e) => { e.preventDefault(); setMode("forgot"); setError(""); setSuccessMsg(""); }} className="text-[#1f5da1] hover:underline text-[12px]">
+                    Forgot your password?
+                  </a>
+                )}
+
+                {mode === "forgot" && (
+                  <a href="#" onClick={(e) => { e.preventDefault(); setMode("login"); setError(""); setSuccessMsg(""); }} className="text-[#1f5da1] hover:underline text-[12px]">
+                    Back to login
+                  </a>
+                )}
+
+                {mode === "login" && (
                   <div className="flex items-center gap-1 mt-1">
                     <input
                       type="checkbox"
@@ -207,8 +265,10 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
                     disabled={loading}
                     className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 flex items-center justify-center gap-1.5 transition-colors border border-[#2b2f3d] disabled:opacity-50"
                   >
-                    <ArrowRight size={12} color="#ffffff" className="shrink-0" />
-                    <span className="text-[15px]">{loading ? "Processing..." : isLogin ? "Login" : "Register"}</span>
+                    {mode !== "forgot" && <ArrowRight size={12} color="#ffffff" className="shrink-0" />}
+                    <span className="text-[15px]">
+                      {loading ? "Processing..." : mode === "login" ? "Login" : mode === "register" ? "Register" : "Send Reset Link"}
+                    </span>
                   </button>
                 </div>
               </div>

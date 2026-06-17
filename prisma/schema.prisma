@@ -13,6 +13,14 @@ datasource db {
 // Better Auth Core Models
 // ==========================================
 
+enum Role {
+  User
+  Developer
+  SuperAdmin
+  Admin
+  Partner
+}
+
 model User {
   id            String    @id @default(uuid())
   name          String
@@ -23,7 +31,7 @@ model User {
   updatedAt     DateTime  @updatedAt
   
   // Custom user fields
-  role          String    @default("user") // "user" | "moderator" | "admin"
+  role          Role    @default(User) // "User" | "Developer" | "Super Admin" | "Admin" | "Partner"
   signature     String?
   
   // Better Auth Relations

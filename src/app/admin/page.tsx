@@ -2,6 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
+import QuickActions from "@/components/admin/QuickActions";
 import {
   Menu,
   Search,
@@ -721,57 +722,7 @@ export default function RestructuredAdminDashboard() {
               <div className="lg:col-span-1 flex flex-col gap-4">
                 
                 {/* PRIORITY 1: QUICK ACTIONS */}
-                <div className="bg-[#111622] border border-[#1d2433] p-4 flex flex-col gap-4">
-                  <div className="border-b border-[#1d2433] pb-3">
-                    <h2 className="text-xs font-bold uppercase tracking-wider font-mono text-white flex items-center gap-2">
-                      <span className="inline-block w-1 h-3.5 bg-cyan-400"></span>
-                      Quick Actions
-                    </h2>
-                  </div>
-
-                  <div className="grid grid-cols-3 gap-2">
-                    {/* Add Anime Button — navigates to dedicated route */}
-                    <Link
-                      href="/admin/anime/add"
-                      className="bg-[#0d111a] border border-[#1d2433] hover:border-purple-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group"
-                    >
-                      <Tv className="w-4 h-4 text-purple-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Add Anime</span>
-                    </Link>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-cyan-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <Play className="w-4 h-4 text-cyan-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Add Ep</span>
-                    </button>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-emerald-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <User className="w-4 h-4 text-emerald-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Add Char</span>
-                    </button>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-amber-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <Download className="w-4 h-4 text-amber-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Add Rel</span>
-                    </button>
-                    <Link href="/admin/news/add" className="bg-[#0d111a] border border-[#1d2433] hover:border-pink-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <FileText className="w-4 h-4 text-pink-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">News Post</span>
-                    </Link>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-teal-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <MessageCircle className="w-4 h-4 text-teal-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Thread</span>
-                    </button>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-yellow-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <Wrench className="w-4 h-4 text-yellow-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Edit Req</span>
-                    </button>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-rose-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <AlertTriangle className="w-4 h-4 text-rose-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Reports</span>
-                    </button>
-                    <button className="bg-[#0d111a] border border-[#1d2433] hover:border-violet-500/40 p-2.5 flex flex-col items-center justify-center gap-1.5 transition-all text-center cursor-pointer group">
-                      <Users className="w-4 h-4 text-violet-400 group-hover:scale-110 transition-transform" />
-                      <span className="text-[9px] text-slate-400 font-mono font-bold leading-none select-none">Users</span>
-                    </button>
-                  </div>
-                </div>
+                <QuickActions />
 
                 {/* PRIORITY 2: TOTAL RELEASES CARD & REVIEW ACTIVITY GRAPH */}
                 <div className="flex flex-col gap-4">
