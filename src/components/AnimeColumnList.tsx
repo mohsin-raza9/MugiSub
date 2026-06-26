@@ -32,7 +32,7 @@ export default function AnimeColumnList({ title, category }: AnimeColumnListProp
   }, [category]);
 
   return (
-    <section className="flex flex-col font-sans overflow-hidden flex-1">
+    <section className="flex flex-col font-sans overflow-hidden flex-1 min-w-0">
       {/* Header Strip */}
       <div className="text-black py-1.5 px-2 font-bold text-[12px] flex items-center justify-between border-b border-[#999]">
         <span>{title}</span>
@@ -66,14 +66,14 @@ export default function AnimeColumnList({ title, category }: AnimeColumnListProp
             const bgClass = idx % 2 !== 0 ? "bg-[#bdbfc3]" : "bg-[#cfd1d4]";
 
             return (
-              <div key={item.id} className={`${bgClass} flex gap-2 p-1.5 border-b border-[#999]/30 last:border-b-0`}>
+              <div key={item.id} className={`${bgClass} flex gap-2 p-1.5 border-b border-[#999]/30 last:border-b-0 overflow-hidden`}>
                 {/* Left-aligned poster image */}
                 <div className="w-[50px] h-[70px] shrink-0 border border-[#999]/40 bg-gray-300">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
                   <img src={item.image || "https://images.unsplash.com/photo-1541562232579-512a21360020?w=150&q=80"} alt={item.titleRomaji} className="w-full h-full object-cover" />
                 </div>
                 {/* Data Container */}
-                <div className="flex flex-col justify-between py-0.5 min-w-0">
+                <div className="flex flex-col justify-between py-0.5 min-w-0 flex-1">
                   <div>
                     {/* Title block with square info icon */}
                     <div className="flex items-center gap-1 flex-wrap">

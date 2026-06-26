@@ -116,11 +116,11 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
       </div>
 
       {/* ── Main login/info panel ── */}
-      <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm mt-1.5 flex flex-row p-4 gap-4 w-full">
+      <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm mt-1.5 flex flex-col md:flex-row p-4 gap-4 w-full">
 
         {/* Left column: What Is AniDB? */}
         {isInfo && (
-          <div className="w-[60%] flex flex-col gap-3 pr-2">
+          <div className="w-full md:w-[60%] flex flex-col gap-3 pr-0 md:pr-2">
             <h2 className="font-bold text-black text-[12px] m-0">What Is AniDB?</h2>
             <p className="text-black leading-snug m-0">
               AniDB stands for Anime DataBase. It is a non-profit, user-driven platform providing
@@ -143,7 +143,7 @@ export default function LoginAndRegister({ isInfo = false }: LoginRegProps) {
         )}
 
         {/* Right column: Login / Register / Profile box */}
-        <div className={isInfo ? "w-[40%] flex flex-col" : "w-full flex flex-col"}>
+        <div className={isInfo ? "w-full md:w-[40%] flex flex-col" : "w-full flex flex-col"}>
           {session ? (
             /* Logged In View */
             <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] rounded-sm flex flex-col h-full p-3 gap-2">
