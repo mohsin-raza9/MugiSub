@@ -100,6 +100,7 @@ model Anime {
   airDate       String?   // e.g., "1st April" or "17.05.2026"
   endDate       String?
   image         String?
+  videoUrl      String?   // Movie video URL (Cloudinary)
   episodesCount Int?
   rating        Float?
   ratingCount   Int       @default(0)

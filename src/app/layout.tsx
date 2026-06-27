@@ -15,7 +15,7 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className="h-full antialiased font-sans"
+      className="h-full antialiased font-sans select-none"
     >
       <body className="h-screen w-full m-0 p-0 bg-[#b1b3b5] ">
         <LayoutWrapper>
