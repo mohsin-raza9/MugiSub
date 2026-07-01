@@ -175,38 +175,38 @@ export default function Home() {
   }
 
   return (
-    <div className="w-full pt-2">
+    <div className="w-full min-w-0 pt-2 overflow-x-hidden">
       {/* Tabs Navigation Header */}
-      <div className="flex justify-end mr-2 gap-1">
+      <div className="flex justify-end pr-2 gap-1">
         <Link
           href="/"
           className="bg-[#cfd1d4] border border-[#999999] border-b-[#cfd1d4] px-3 py-1 text-[11px] text-[#1a2536] mb-[-1px] z-10"
         >
-          main
+          Main
         </Link>
         <Link
           href="/forum"
-          className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:underline ml-[2px]"
+          className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:bg-[#cfd1d4] hover:text-black ml-[2px]"
         >
-          forum
+          Forum
         </Link>
         <button
           type="button"
           onClick={() => setShowAuth(true)}
-          className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:underline ml-[2px]"
+          className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:bg-[#cfd1d4] hover:text-black ml-[2px]"
         >
-          outbox
+          Outbox
         </button>
       </div>
 
-      <div className="w-auto p-4 ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-2 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
+      <div className="w-full min-w-0 p-3 lg:p-4 lg:ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-2 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-hidden">
 
         {/* 1. Deep charcoal/navy-blue banner bar */}
         <div className="bg-[#34394d] text-[#ddd] p-3 py-1.5 border border-[#1c2331] font-bold text-[15px] uppercase tracking-wide shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
           Main
         </div>
 
-        <section className="grid grid-cols-2 gap-2 h-full">
+        <section className="grid grid-cols-1 md:grid-cols-2 gap-2 h-full">
           <News />
           <LoginAndRegister isInfo={true} />
         </section>
@@ -230,8 +230,8 @@ export default function Home() {
             </div>
 
             {/* Table Container */}
-            <div className="mt-1 border border-[#999] bg-[#bdbfc3] p-1 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] flex-1">
-              <table className="w-full border-collapse">
+            <div className="mt-1 border border-[#999] bg-[#bdbfc3] p-1 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] flex-1 overflow-x-auto">
+              <table className="w-full border-collapse min-w-[550px] lg:min-w-0">
                 <thead>
                   <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
                     <th className="px-2 py-1.5 text-left border-r border-[#1c2331] font-sans font-bold">Anime</th>
@@ -323,8 +323,8 @@ export default function Home() {
             </div>
 
             {/* Table Container */}
-            <div className="mt-1 border border-[#999] bg-[#bdbfc3] p-1 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] flex-1">
-              <table className="w-full border-collapse">
+            <div className="mt-1 border border-[#999] bg-[#bdbfc3] p-1 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] flex-1 overflow-x-auto">
+              <table className="w-full border-collapse min-w-[400px] lg:min-w-0">
                 <thead>
                   <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
                     <th className="px-2 py-1.5 text-center border-r border-[#1c2331] font-sans font-bold w-[75px]">Airdate</th>
@@ -379,12 +379,12 @@ export default function Home() {
       </div>
 
       {/* Footer component */}
-      <footer className="w-full px-6 py-4  flex justify-between items-center text-[11px] text-black font-sans border-t border-[#999]/30">
+      <footer className="w-full px-4 sm:px-6 py-4 flex flex-col md:flex-row justify-between items-center gap-4 text-[11px] text-black font-sans border-t border-[#999]/30">
         {/* Left side empty spacer */}
-        <div className="flex-1" />
+        <div className="hidden md:block flex-1" />
 
         {/* Center side: Multi-line Metadata */}
-        <div className="flex-[2] flex flex-col items-center text-center space-y-0.5">
+        <div className="flex-[2] flex flex-col items-center text-center space-y-0.5 w-full">
           <div className="w-full text-center">
             AniDB is licensed under a{" "}
             <a
@@ -400,13 +400,13 @@ export default function Home() {
           <div className="w-full text-center text-black">
             v 2022-04, © 2002-2022 by AniDB; all rights reserved. [0s] - 19.05.2026 18:27:47
           </div>
-          <div className="w-full text-center pr-[12%] text-gray-800 font-sans">
+          <div className="w-full text-center pr-0 md:pr-[12%] text-gray-800 font-sans">
             design by deridiot
           </div>
         </div>
 
         {/* Right side: Social Icons Matrix */}
-        <div className="flex-1 flex justify-end items-center gap-2 text-[#1f5da1]">
+        <div className="flex-1 flex justify-center md:justify-end items-center gap-2 text-[#1f5da1] w-full">
           <a
             href="https://facebook.com"
             target="_blank"

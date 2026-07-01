@@ -27,7 +27,7 @@ export default function CurrentSeasonList() {
   }, []);
 
   return (
-    <section className="w-full flex flex-col font-sans overflow-hidden">
+    <section className="w-full min-w-0 flex flex-col font-sans overflow-hidden">
       {/* Section Header Bar */}
       <div className="text-black py-1.5 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
         <span>Current Season</span>
@@ -40,8 +40,8 @@ export default function CurrentSeasonList() {
       </div>
 
       {/* Dynamic 6-Column Grid Wrapper */}
-      <div className="mt-1">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-2">
+      <div className="mt-1 min-w-0">
+        <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2">
           {loading ? (
             // Skeleton Loaders
             Array.from({ length: 6 }).map((_, index) => (
