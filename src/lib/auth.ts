@@ -16,25 +16,7 @@ export const auth = betterAuth({
     database: prismaAdapter(prisma, {
         provider: "postgresql",
     }),
-    databaseHooks: {
-        user: {
-            create: {
-                before: async (user) => {
-                    const allowPublicEmails = process.env.ALLOW_PUBLIC_EMAILS === "true";
-                    if (!allowPublicEmails) {
-                        const publicDomains = ["gmail.com", "yahoo.com", "outlook.com", "hotmail.com", "aol.com"];
-                        const emailDomain = user.email.split("@")[1]?.toLowerCase();
-                        if (publicDomains.includes(emailDomain)) {
-                            // To block registration, better-auth expects us to either throw or return something that indicates failure. 
-                            // Wait, if better-auth allows throwing an error, we can throw one.
-                            throw new Error("Public email domains are not allowed.");
-                        }
-                    }
-                    return { data: user };
-                }
-            }
-        }
-    },
+
     emailAndPassword: {
         enabled: true,
         sendResetPassword: async ({ user, url }) => {
