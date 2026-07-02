@@ -127,6 +127,7 @@ export default function NewsForm() {
   const [content, setContent] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -134,19 +135,33 @@ export default function NewsForm() {
 
     setIsLoading(true);
     setIsSuccess(false);
+    setError(null);
 
-    // Simulate API call – replace with real POST to your news endpoint
-    await new Promise((resolve) => setTimeout(resolve, 1800));
+    try {
+      const res = await fetch('/api/news', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), content: content.trim() }),
+      });
 
-    setIsLoading(false);
-    setIsSuccess(true);
+      const data = await res.json();
 
-    // Reset after 3 seconds
-    setTimeout(() => {
-      setTitle('');
-      setContent('');
-      setIsSuccess(false);
-    }, 3000);
+      if (!res.ok) {
+        setError(data.message || 'Failed to post news.');
+        return;
+      }
+
+      setIsSuccess(true);
+
+      // Navigate to admin home after a short success flash
+      setTimeout(() => {
+        window.location.href = '/admin';
+      }, 1200);
+    } catch {
+      setError('Network error. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -169,6 +184,13 @@ export default function NewsForm() {
         onChange={(e) => setContent(e.target.value)}
         required
       />
+
+      {/* Error message */}
+      {error && (
+        <p className="text-xs font-mono text-red-400 border border-red-500/20 bg-red-500/5 px-3 py-2">
+          ⚠ {error}
+        </p>
+      )}
 
       {/* Submit */}
       <Button
