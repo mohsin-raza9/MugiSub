@@ -1,7 +1,6 @@
 'use client';
 
 import React, { useState, useEffect, useRef } from 'react';
-import AddEpisode from '@/components/layouts/add_episode';
 import {
   Tv,
   BookOpen,
@@ -60,7 +59,6 @@ export default function AdminDashboard() {
   const [animeList, setAnimeList] = useState(INITIAL_ANIME);
   const [novelsList, setNovelsList] = useState(INITIAL_NOVELS);
   const [releaseCount, setReleaseCount] = useState(412);
-
   // Logs
   const [logs, setLogs] = useState<string[]>([
     "[18:22:01] SYSTEM   : MugiSub Admin initialized.",
@@ -622,7 +620,7 @@ export default function AdminDashboard() {
             {/* Status Box */}
 
 
-            <Statusbox />
+            <Statusbox />   
 
 
             {/* Navigate / Quick Links Box */}
@@ -649,15 +647,43 @@ export default function AdminDashboard() {
         </div>
       </div>
       {/* ════ MODALS ════════════════════════════════════════════════ */}
-
+      
       {/* Add Episode */}
-      {/* Baaki return codes ke sath isko dashboard file ke end par render karein */}
-      <AddEpisode
-        isOpen={isAddEpisode}
-        onClose={() => setIsAddEpisode(false)}
-        animeList={animeList}
-        addLog={addLog}
-      />
+      {isAddEpisode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Add Episode</div>
+            <form onSubmit={handleAddEpisode} className="p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Anime</label>
+                <select value={epAnime} onChange={e => setEpAnime(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none cursor-pointer">
+                  {animeList.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Ep No.</label>
+                  <input type="number" min={1} value={epNum} onChange={e => setEpNum(+e.target.value)}
+                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Title</label>
+                  <input value={epTitle} onChange={e => setEpTitle(e.target.value)}
+                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none"
+                    placeholder="Optional" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setIsAddEpisode(false)}
+                  className="flex-1 py-1.5 border border-[#999] hover:bg-[#c8cacc] text-[11px] font-bold text-[#34394d] cursor-pointer">CANCEL</button>
+                <button type="submit"
+                  className="flex-1 py-1.5 bg-[#34394d] hover:bg-[#12151f] text-white text-[11px] font-bold border border-[#1c2331] cursor-pointer">ADD EP</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
 
       {/* Sync Progress */}
       {isSyncing && (

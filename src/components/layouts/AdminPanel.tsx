@@ -1,7 +1,158 @@
-   {/* ── Main content container — matches page.tsx's content div ─ */}
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import {
+  Tv,
+  BookOpen,
+  Users,
+  Zap,
+  PlayCircle,
+  PlusCircle,
+  RefreshCw,
+  History,
+  Loader2,
+  CheckCircle2,
+  ChevronRight,
+  TrendingUp,
+} from 'lucide-react';
+import UsersTable from '@/components/admin/tables/UsersTable';
+import AddAnime from '@/components/layouts/add_anime';
+import Statusbox from '@/components/layouts/statusbox';
+
+// ─── Mock Data ────────────────────────────────────────────────────
+const INITIAL_ANIME = [
+  { id: 'AN-992', title: 'Solo Leveling Vol. 2', type: 'TV Series', status: 'SYNCED' },
+  { id: 'AN-881', title: 'Bleach: TYBW Part 3', type: 'TV Series', status: 'INDEXING' },
+  { id: 'AN-102', title: 'Demon Slayer: Hashira Training', type: 'TV Series', status: 'SYNCED' },
+  { id: 'AN-103', title: 'Jujutsu Kaisen Season 2', type: 'TV Series', status: 'SYNCED' },
+];
+
+const INITIAL_NOVELS = [
+  { id: 'LN-042', title: 'Overlord: The Holy Kingdom', author: 'Kugane Maruyama', status: 'SYNCED' },
+  { id: 'LN-011', title: 'Re:Zero Arc 8', author: 'Tappei Nagatsuki', status: 'SYNCED' },
+  { id: 'LN-105', title: 'Classroom of the Elite Vol. 11', author: 'Shogo Kinugasa', status: 'SYNCED' },
+];
+
+const PENDING_APPROVALS = [
+  { type: 'EP_RECAP', contributor: 'U_Nightcore' },
+  { type: 'SUB_FILE', contributor: 'Fansub_Prime' },
+  { type: 'BANNER_ART', contributor: 'K_Illustrator' },
+  { type: 'METADATA', contributor: 'Bot_Scraper_3' },
+];
+
+// ─── Helpers ──────────────────────────────────────────────────────
+const statusBadge = (s: string) =>
+  s === 'SYNCED'
+    ? 'inline-block bg-[#1a4731] text-[#4ade80] border border-[#2d6a4a] text-[9px] font-bold px-1.5 py-0.5 uppercase'
+    : 'inline-block bg-[#3b1c1c] text-[#f87171] border border-[#6b2c2c] text-[9px] font-bold px-1.5 py-0.5 uppercase';
+
+export default function AdminPanel() {
+  const [activeTab, setActiveTab] = useState<'DATABASE' | 'TERMINAL' | 'USERS' | 'CONTENT'>('DATABASE');
+
+  const [animeList, setAnimeList] = useState(INITIAL_ANIME);
+  const [novelsList, setNovelsList] = useState(INITIAL_NOVELS);
+  const [releaseCount, setReleaseCount] = useState(412);
+
+  // Logs
+  const [logs, setLogs] = useState<string[]>([
+    "[18:22:01] SYSTEM   : MugiSub Admin initialized.",
+    "[18:22:05] DB_PROC  : Kysely connected to Neon PostgreSQL.",
+    "[18:22:15] AUTH     : Super Admin session started.",
+    "[18:22:45] SYNC_EVT : Metadata synced for Solo Leveling Vol. 2.",
+    "[18:23:01] STATUS   : All nodes OPERATIONAL.",
+  ]);
+
+  const addLog = (msg: string) => {
+    const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
+    setLogs(prev => [...prev, `[${t}] ${msg}`]);
+  };
+
+  // Modals
+  const [isAddAnime, setIsAddAnime] = useState(false);
+  const [isAddNovel, setIsAddNovel] = useState(false);
+  const [isAddEpisode, setIsAddEpisode] = useState(false);
+
+  // Novel & Episode Form States
+  const [novelTitle, setNovelTitle] = useState('');
+  const [novelAuthor, setNovelAuthor] = useState('');
+  const [epAnime, setEpAnime] = useState('');
+  const [epNum, setEpNum] = useState(1);
+  const [epTitle, setEpTitle] = useState('');
+
+  // Sync
+  const [isSyncing, setIsSyncing] = useState(false);
+  const [syncProgress, setSyncProgress] = useState(0);
+  const [syncLogs, setSyncLogs] = useState<string[]>([]);
+  const [syncSuccess, setSyncSuccess] = useState(false);
+
+  const triggerSync = () => {
+    setIsSyncing(true); setSyncProgress(0); setSyncSuccess(false);
+    setSyncLogs(["Initialising core...", "Verifying DB schema..."]);
+    addLog("ADMIN    : Manual SYSTEM_SYNC triggered.");
+  };
+
+  useEffect(() => {
+    let iv: NodeJS.Timeout;
+    if (isSyncing) {
+      iv = setInterval(() => {
+        setSyncProgress(prev => {
+          if (prev >= 100) {
+            clearInterval(iv);
+            setIsSyncing(false);
+            setSyncSuccess(true);
+            addLog("SYSTEM   : Sync COMPLETED — all nodes OK.");
+            return 100;
+          }
+          const n = Math.min(prev + Math.floor(Math.random() * 20) + 10, 100);
+          if (n > 30 && n <= 60) setSyncLogs(p => p.length < 3 ? [...p, "[DB] Cache flushed... OK"] : p);
+          if (n > 60 && n <= 85) setSyncLogs(p => p.length < 4 ? [...p, "[CDN] Edge nodes refreshed... OK"] : p);
+          if (n > 85 && n < 100) setSyncLogs(p => p.length < 5 ? [...p, "[META] Hashes verified... OK"] : p);
+          return n;
+        });
+      }, 380);
+    }
+    return () => clearInterval(iv);
+  }, [isSyncing]);
+
+  const handleAddNovel = (e: React.FormEvent) => {
+    e.preventDefault();
+    const id = `LN-${Math.floor(100 + Math.random() * 900)}`;
+    setNovelsList(p => [{ id, title: novelTitle, author: novelAuthor, status: 'SYNCED' }, ...p]);
+    addLog(`ADMIN    : Added Novel "${novelTitle}" by ${novelAuthor} (${id})`);
+    setNovelTitle(''); setNovelAuthor(''); setIsAddNovel(false);
+  };
+
+  const handleAddEpisode = (e: React.FormEvent) => {
+    e.preventDefault();
+    setReleaseCount(p => p + 1);
+    const anime = animeList.find(a => a.id === epAnime);
+    addLog(`ADMIN    : Added Episode #${epNum} for "${anime?.title || epAnime}"`);
+    setEpTitle(''); setIsAddEpisode(false);
+  };
+
+  return (
+    <div className="w-full min-w-0 pt-2 overflow-x-hidden">
+
+      {/* ── Tab Navigation ── */}
+      <div className="flex justify-end pr-2 gap-0 mb-0">
+        {(['DATABASE', 'TERMINAL', 'USERS', 'CONTENT'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`border border-[#999999] px-3 py-1 text-[11px] ml-[2px] transition-colors cursor-pointer font-sans ${activeTab === tab
+              ? 'bg-[#cfd1d4] text-[#1a2536] border-b-[#cfd1d4] mb-[-1px] z-10'
+              : 'bg-[#34394d] text-white hover:bg-[#cfd1d4] hover:text-black border-b-0'
+              }`}
+          >
+            {tab.charAt(0) + tab.slice(1).toLowerCase()}
+          </button>
+        ))}
+      </div>
+
+      {/* ── Main content container ─ */}
       <div className="w-full min-w-0 p-3 lg:p-4 lg:ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-3 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-hidden">
 
-        {/* ── Page title banner — matches "MAIN" banner on home page ─ */}
+        {/* ── Page title banner ─ */}
         <div className="bg-[#34394d] text-[#ddd] p-3 py-1.5 border border-[#1c2331] font-bold text-[15px] uppercase tracking-wide shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
           Admin Panel
         </div>
@@ -15,7 +166,7 @@
             {/* ─── DATABASE TAB ─────────────────────────────────── */}
             {activeTab === 'DATABASE' && (
               <>
-                {/* Stat cards — styled like the site's table headers */}
+                {/* Stat cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {[
                     { label: 'Total Anime', value: animeList.length + 12838, badge: '+4.2%', icon: Tv, color: '#a11f1f' },
@@ -37,7 +188,7 @@
                   ))}
                 </div>
 
-                {/* Activity chart — styled like site's Recent Releases section */}
+                {/* Activity chart */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>User Activity &amp; Registrations — 30-Day Analysis</span>
@@ -51,26 +202,21 @@
                           <stop offset="100%" stopColor="#1f3e70" stopOpacity="0.02" />
                         </linearGradient>
                       </defs>
-                      {/* Y-axis gridlines */}
                       {[35, 70, 105].map(y => (
                         <line key={y} x1="0" y1={y} x2="900" y2={y}
                           stroke="#999" strokeDasharray="3 3" strokeWidth="0.6" />
                       ))}
-                      {/* Area fill */}
                       <path
                         d="M0,125 C60,118 100,120 180,112 S310,95 450,75 S610,95 720,88 S820,45 900,30 L900,148 L0,148 Z"
                         fill="url(#cg)"
                       />
-                      {/* Line */}
                       <path
                         d="M0,125 C60,118 100,120 180,112 S310,95 450,75 S610,95 720,88 S820,45 900,30"
                         fill="none" stroke="#1f3e70" strokeWidth="2"
                       />
-                      {/* Dots */}
                       {[[0, 125], [180, 112], [450, 75], [720, 88], [900, 30]].map(([x, y], i) => (
                         <circle key={i} cx={x} cy={y} r="3.5" fill="#1f3e70" stroke="#cfd1d4" strokeWidth="1.5" />
                       ))}
-                      {/* X-axis labels */}
                       {[['JUN_01', 10], ['JUN_08', 195], ['JUN_15', 420], ['JUN_22', 640], ['JUN_30', 848]].map(([l, x]) => (
                         <text key={l} x={x} y="148" fontSize="9" fill="#34394d">{l}</text>
                       ))}
@@ -81,7 +227,6 @@
                 {/* Tables Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-                  {/* Latest Added Content — matches site table style */}
                   <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                     <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
                       Latest Added Content
@@ -111,7 +256,6 @@
                     </table>
                   </div>
 
-                  {/* Pending Approvals */}
                   <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                     <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
                       Pending Approvals
@@ -196,7 +340,6 @@
             {/* ─── CONTENT TAB ──────────────────────────────────── */}
             {activeTab === 'CONTENT' && (
               <div className="space-y-3">
-                {/* Anime Index */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>Anime Index</span>
@@ -228,7 +371,6 @@
                   </table>
                 </div>
 
-                {/* Novels Index */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>Novels Index</span>
@@ -266,20 +408,16 @@
           {/* ════ RIGHT SIDEBAR ════════════════════════════════════ */}
           <div className="w-[200px] shrink-0 space-y-3">
 
-            {/* Commands Grid Box */}
             <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
               <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
                 Commands
               </div>
 
-              {/* Clean 3-Column Grid for Symmetric Actions */}
               <div className="p-2 space-y-2">
                 <div className="grid grid-cols-3 gap-1.5">
 
-                  {/* ADD ANIME BOX */}
                   <AddAnime />
 
-                  {/* ADD EPISODE BOX */}
                   <button
                     onClick={() => setIsAddEpisode(true)}
                     className="flex flex-col items-center justify-center p-1.5 bg-[#4a4f5d] hover:bg-[#5c6273] text-white border border-[#34394d] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
@@ -288,7 +426,6 @@
                     <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">ADD_EPISODE</span>
                   </button>
 
-                  {/* SYSTEM SYNC BOX */}
                   <button
                     onClick={triggerSync}
                     className="flex flex-col items-center justify-center p-1.5 bg-[#1a5c36] hover:bg-[#227a48] text-white border border-[#113d24] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
@@ -299,7 +436,6 @@
 
                 </div>
 
-                {/* Full Width Modernized History Bar */}
                 <button
                   onClick={() => setActiveTab('TERMINAL')}
                   className="w-full flex items-center justify-center py-2 bg-[#8c6d1d] hover:bg-[#a68224] text-white border border-[#664f14] transition-colors cursor-pointer rounded-sm group"
@@ -312,13 +448,9 @@
               </div>
 
             </div>
-            {/* Status Box */}
 
+            <Statusbox />
 
-            <Statusbox />   
-
-
-            {/* Navigate / Quick Links Box */}
             <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
               <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
                 Navigate
@@ -341,3 +473,109 @@
           </div>
         </div>
       </div>
+
+      {/* ════ MODALS ════════════════════════════════════════════════ */}
+
+      {/* Add Novel */}
+      {isAddNovel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Add Novel</div>
+            <form onSubmit={handleAddNovel} className="p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Title</label>
+                <input value={novelTitle} onChange={e => setNovelTitle(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" required />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Author</label>
+                <input value={novelAuthor} onChange={e => setNovelAuthor(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" required />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setIsAddNovel(false)}
+                  className="flex-1 py-1.5 border border-[#999] hover:bg-[#c8cacc] text-[11px] font-bold text-[#34394d] cursor-pointer">CANCEL</button>
+                <button type="submit"
+                  className="flex-1 py-1.5 bg-[#1f3e70] hover:bg-[#254d8c] text-white text-[11px] font-bold border border-[#15305a] cursor-pointer">ADD NOVEL</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Add Episode */}
+      {isAddEpisode && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Add Episode</div>
+            <form onSubmit={handleAddEpisode} className="p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Anime</label>
+                <select value={epAnime} onChange={e => setEpAnime(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none cursor-pointer">
+                  {animeList.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
+                </select>
+              </div>
+              <div className="grid grid-cols-2 gap-2">
+                <div>
+                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Ep No.</label>
+                  <input type="number" min={1} value={epNum} onChange={e => setEpNum(+e.target.value)}
+                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" />
+                </div>
+                <div>
+                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Title</label>
+                  <input value={epTitle} onChange={e => setEpTitle(e.target.value)}
+                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none"
+                    placeholder="Optional" />
+                </div>
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setIsAddEpisode(false)}
+                  className="flex-1 py-1.5 border border-[#999] hover:bg-[#c8cacc] text-[11px] font-bold text-[#34394d] cursor-pointer">CANCEL</button>
+                <button type="submit"
+                  className="flex-1 py-1.5 bg-[#34394d] hover:bg-[#12151f] text-white text-[11px] font-bold border border-[#1c2331] cursor-pointer">ADD EP</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Progress */}
+      {isSyncing && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">System Sync</div>
+            <div className="p-4 space-y-3">
+              <div className="flex justify-between text-[11px] font-mono text-[#1a2536]">
+                <span className="flex items-center gap-1"><Loader2 size={12} className="animate-spin text-[#1a5c36]" /> Syncing...</span>
+                <span className="font-bold">{syncProgress}%</span>
+              </div>
+              <div className="h-2 bg-[#999]/30"><div className="h-full bg-[#1a5c36]" style={{ width: `${syncProgress}%` }} /></div>
+              <div className="bg-[#111827] p-2 h-24 overflow-y-auto font-mono text-[9px] text-[#4ade80] space-y-0.5">
+                {syncLogs.map((l, i) => <div key={i}>{l}</div>)}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Sync Success */}
+      {syncSuccess && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-72 shadow-xl text-center">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Sync Complete</div>
+            <div className="p-5">
+              <CheckCircle2 size={32} className="text-[#1a5c36] mx-auto mb-3" />
+              <p className="text-[11px] font-mono font-bold text-[#1a2536]">DATABASE SYNCHRONISED</p>
+              <p className="text-[9px] text-[#555] mt-1">All nodes verified. CDN caches invalidated.</p>
+              <button onClick={() => setSyncSuccess(false)}
+                className="mt-4 px-6 py-1.5 bg-[#1a5c36] hover:bg-[#236b40] text-white text-[11px] font-bold border border-[#134526] cursor-pointer">
+                DISMISS
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
