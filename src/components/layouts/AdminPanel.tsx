@@ -46,19 +46,13 @@ const statusBadge = (s: string) =>
     ? 'inline-block bg-[#1a4731] text-[#4ade80] border border-[#2d6a4a] text-[9px] font-bold px-1.5 py-0.5 uppercase'
     : 'inline-block bg-[#3b1c1c] text-[#f87171] border border-[#6b2c2c] text-[9px] font-bold px-1.5 py-0.5 uppercase';
 
-// Section header — matches sidebar section headers exactly
-const SH = ({ t }: { t: string }) => (
-  <div className="bg-[#2e384d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
-    {t}
-  </div>
-);
-
-export default function AdminDashboard() {
+export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<'DATABASE' | 'TERMINAL' | 'USERS' | 'CONTENT'>('DATABASE');
 
   const [animeList, setAnimeList] = useState(INITIAL_ANIME);
   const [novelsList, setNovelsList] = useState(INITIAL_NOVELS);
   const [releaseCount, setReleaseCount] = useState(412);
+
   // Logs
   const [logs, setLogs] = useState<string[]>([
     "[18:22:01] SYSTEM   : MugiSub Admin initialized.",
@@ -77,26 +71,6 @@ export default function AdminDashboard() {
   const [isAddAnime, setIsAddAnime] = useState(false);
   const [isAddNovel, setIsAddNovel] = useState(false);
   const [isAddEpisode, setIsAddEpisode] = useState(false);
-
-  // Forms States (Extended for DB Schema)
-  const [animeTitle, setAnimeTitle] = useState('');
-  const [titleEnglish, setTitleEnglish] = useState('');
-  const [titleJapanese, setTitleJapanese] = useState('');
-  const [animeType, setAnimeType] = useState('TV');
-  const [animeStatus, setAnimeStatus] = useState('Upcoming');
-  const [isFeatured, setIsFeatured] = useState(false);
-  const [airDate, setAirDate] = useState('');
-  const [nextEpisodeAt, setNextEpisodeAt] = useState('');
-  const [imageUrl, setImageUrl] = useState('');
-  const [bannerUrl, setBannerUrl] = useState('');
-  // Validation Error State
-  const [formErrors, setFormErrors] = useState<string[]>([]);
-
-  // Image Upload Refs & States
-  const posterInputRef = useRef<HTMLInputElement>(null);
-  const bannerInputRef = useRef<HTMLInputElement>(null);
-  const [posterName, setPosterName] = useState('');
-  const [bannerName, setBannerName] = useState('');
 
   // Novel & Episode Form States
   const [novelTitle, setNovelTitle] = useState('');
@@ -140,86 +114,6 @@ export default function AdminDashboard() {
     return () => clearInterval(iv);
   }, [isSyncing]);
 
-  // Unified API Dynamic Post Handler
-  // Unified API Dynamic Post Handler with Multi-Field Validation
-  const handleAddAnime = async (e: React.FormEvent) => {
-    e.preventDefault();
-
-    // Clear previous errors
-    const errors: string[] = [];
-
-    // 1. Language & Titles Validation
-    if (!animeTitle.trim()) errors.push("Romaji Title is strictly required.");
-
-    // 2. Format Type Validation
-    const validFormats = ['TV', 'Movie', 'OVA', 'ONA', 'Web', 'Special'];
-    if (!validFormats.includes(animeType)) {
-      errors.push("Invalid Format Type selected.");
-    }
-
-    // 3. Airing Status Validation
-    const validStatuses = ['Upcoming', 'Airing', 'Finished', 'Hiatus'];
-    if (!validStatuses.includes(animeStatus)) {
-      errors.push("Invalid Airing Status selected.");
-    }
-
-    // 4. Air Date String Validation
-    if (animeStatus === 'Upcoming' && !airDate.trim()) {
-      errors.push("Air Date String is required when status is 'Upcoming'.");
-    }
-
-    // 5. Next Episode Countdown Validation
-    if (animeStatus === 'Airing' && !nextEpisodeAt) {
-      errors.push("Next Episode Countdown timestamp is required for live Airing anime.");
-    }
-
-    // 6. Poster & Banner Media Validation
-    if (!imageUrl) {
-      errors.push("Poster Image is mandatory. Please drag or upload a file.");
-    }
-    // Banner configuration check for Featured Slider content
-    if (isFeatured && !bannerUrl) {
-      errors.push("Featured (Slider) content requires a high-res Banner Image.");
-    }
-
-    // If validation fails, abort pipeline and show logs
-    if (errors.length > 0) {
-      setFormErrors(errors);
-      if (typeof addLog === 'function') addLog(`VAL_WARN  : Form validation rejected with ${errors.length} errors.`);
-      return;
-    }
-
-    // Clear validation box if clean
-    setFormErrors([]);
-
-    const tempId = `AN-${Math.floor(100 + Math.random() * 900)}`;
-    const payload = {
-      titleRomaji: animeTitle,
-      titleEnglish: titleEnglish || null,
-      titleJapanese: titleJapanese || null,
-      type: animeType,
-      status: animeStatus,
-      isFeatured,
-      airDate: airDate || null,
-      nextEpisodeAt: nextEpisodeAt ? new Date(nextEpisodeAt).toISOString() : null,
-      image: imageUrl || null,
-      bannerImage: bannerUrl || null,
-    };
-
-    try {
-      if (typeof addLog === 'function') addLog(`DB_WRITE : Committing record "${animeTitle}" to database...`);
-
-      console.log(payload)
-
-      // Reset Form fields and Dropzones
-      setAnimeTitle(''); setTitleEnglish(''); setTitleJapanese(''); setAirDate(''); setNextEpisodeAt(''); setImageUrl(''); setBannerUrl(''); setPosterName(''); setBannerName(''); setIsAddAnime(false);
-    } catch (error) {
-      if (typeof addLog === 'function') addLog(`DB_ERR   : Pipeline failed to write entry.`);
-      console.error(error);
-    }
-  };
-
-
   const handleAddNovel = (e: React.FormEvent) => {
     e.preventDefault();
     const id = `LN-${Math.floor(100 + Math.random() * 900)}`;
@@ -236,77 +130,29 @@ export default function AdminDashboard() {
     setEpTitle(''); setIsAddEpisode(false);
   };
 
-  // ─── Sidebar command button — matches site's button style ─────
-  const CmdBtn = ({
-    label, onClick, variant = 'default', icon: Icon,
-  }: {
-    label: string; onClick: () => void;
-    variant?: 'red' | 'navy' | 'green' | 'gold' | 'default';
-    icon: React.ElementType;
-  }) => {
-    const styles: Record<string, string> = {
-      red: 'bg-[#a11f1f] hover:bg-[#c02222] text-white border-[#7a1515]',
-      navy: 'bg-[#1f3e70] hover:bg-[#254d8c] text-white border-[#15305a]',
-      green: 'bg-[#1a5c36] hover:bg-[#236b40] text-white border-[#134526]',
-      gold: 'bg-[#5c4a1a] hover:bg-[#6e5a20] text-white border-[#42360f]',
-      default: 'bg-[#34394d] hover:bg-[#12151f] text-white border-[#1c2331]',
-    };
-    return (
-      <button
-        onClick={onClick}
-        className={`w-full flex items-center justify-between px-2 py-[5px] border text-[11px] font-bold uppercase tracking-wide transition-colors cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.3)] ${styles[variant]}`}
-      >
-        <span>{label}</span>
-        <Icon size={13} />
-      </button>
-    );
-  };
-
-  // ─── Tab button — exact match to "Main | Forum | Outbox" style ─
-  const TabBtn = ({ tab, label }: { tab: typeof activeTab; label: string }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`border border-[#999999] px-3 py-1 text-[11px] ml-[2px] transition-colors cursor-pointer font-sans ${activeTab === tab
-        ? 'bg-[#cfd1d4] text-[#1a2536] border-b-[#cfd1d4] mb-[-1px] z-10'
-        : 'bg-[#34394d] text-white hover:bg-[#cfd1d4] hover:text-black border-b-0'
-        }`}
-    >
-      {label}
-    </button>
-  );
-
-  const handleFileChange = (file: File, type: 'poster' | 'banner') => {
-    if (!file) return;
-
-    // Generates a local browser URL that can be used directly in <img> src
-    const generatedUrl = URL.createObjectURL(file);
-
-    if (type === 'poster') {
-      setImageUrl(generatedUrl);
-      setPosterName(file.name);
-      if (typeof addLog === 'function') addLog(`FS_LOAD  : Poster loaded locally -> ${file.name}`);
-    } else {
-      setBannerUrl(generatedUrl);
-      setBannerName(file.name);
-      if (typeof addLog === 'function') addLog(`FS_LOAD  : Banner loaded locally -> ${file.name}`);
-    }
-  };
-
   return (
     <div className="w-full min-w-0 pt-2 overflow-x-hidden">
 
-      {/* ── Tab Navigation — identical to Main/Forum/Outbox style ── */}
+      {/* ── Tab Navigation ── */}
       <div className="flex justify-end pr-2 gap-0 mb-0">
-        <TabBtn tab="DATABASE" label="Database" />
-        <TabBtn tab="TERMINAL" label="Terminal" />
-        <TabBtn tab="USERS" label="Users" />
-        <TabBtn tab="CONTENT" label="Content" />
+        {(['DATABASE', 'TERMINAL', 'USERS', 'CONTENT'] as const).map(tab => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={`border border-[#999999] px-3 py-1 text-[11px] ml-[2px] transition-colors cursor-pointer font-sans ${activeTab === tab
+              ? 'bg-[#cfd1d4] text-[#1a2536] border-b-[#cfd1d4] mb-[-1px] z-10'
+              : 'bg-[#34394d] text-white hover:bg-[#cfd1d4] hover:text-black border-b-0'
+              }`}
+          >
+            {tab.charAt(0) + tab.slice(1).toLowerCase()}
+          </button>
+        ))}
       </div>
 
-      {/* ── Main content container — matches page.tsx's content div ─ */}
+      {/* ── Main content container ─ */}
       <div className="w-full min-w-0 p-3 lg:p-4 lg:ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-3 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-hidden">
 
-        {/* ── Page title banner — matches "MAIN" banner on home page ─ */}
+        {/* ── Page title banner ─ */}
         <div className="bg-[#34394d] text-[#ddd] p-3 py-1.5 border border-[#1c2331] font-bold text-[15px] uppercase tracking-wide shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
           Admin Panel
         </div>
@@ -320,7 +166,7 @@ export default function AdminDashboard() {
             {/* ─── DATABASE TAB ─────────────────────────────────── */}
             {activeTab === 'DATABASE' && (
               <>
-                {/* Stat cards — styled like the site's table headers */}
+                {/* Stat cards */}
                 <div className="grid grid-cols-2 lg:grid-cols-4 gap-2">
                   {[
                     { label: 'Total Anime', value: animeList.length + 12838, badge: '+4.2%', icon: Tv, color: '#a11f1f' },
@@ -342,7 +188,7 @@ export default function AdminDashboard() {
                   ))}
                 </div>
 
-                {/* Activity chart — styled like site's Recent Releases section */}
+                {/* Activity chart */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>User Activity &amp; Registrations — 30-Day Analysis</span>
@@ -356,26 +202,21 @@ export default function AdminDashboard() {
                           <stop offset="100%" stopColor="#1f3e70" stopOpacity="0.02" />
                         </linearGradient>
                       </defs>
-                      {/* Y-axis gridlines */}
                       {[35, 70, 105].map(y => (
                         <line key={y} x1="0" y1={y} x2="900" y2={y}
                           stroke="#999" strokeDasharray="3 3" strokeWidth="0.6" />
                       ))}
-                      {/* Area fill */}
                       <path
                         d="M0,125 C60,118 100,120 180,112 S310,95 450,75 S610,95 720,88 S820,45 900,30 L900,148 L0,148 Z"
                         fill="url(#cg)"
                       />
-                      {/* Line */}
                       <path
                         d="M0,125 C60,118 100,120 180,112 S310,95 450,75 S610,95 720,88 S820,45 900,30"
                         fill="none" stroke="#1f3e70" strokeWidth="2"
                       />
-                      {/* Dots */}
                       {[[0, 125], [180, 112], [450, 75], [720, 88], [900, 30]].map(([x, y], i) => (
                         <circle key={i} cx={x} cy={y} r="3.5" fill="#1f3e70" stroke="#cfd1d4" strokeWidth="1.5" />
                       ))}
-                      {/* X-axis labels */}
                       {[['JUN_01', 10], ['JUN_08', 195], ['JUN_15', 420], ['JUN_22', 640], ['JUN_30', 848]].map(([l, x]) => (
                         <text key={l} x={x} y="148" fontSize="9" fill="#34394d">{l}</text>
                       ))}
@@ -386,7 +227,6 @@ export default function AdminDashboard() {
                 {/* Tables Row */}
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
 
-                  {/* Latest Added Content — matches site table style */}
                   <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                     <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
                       Latest Added Content
@@ -416,7 +256,6 @@ export default function AdminDashboard() {
                     </table>
                   </div>
 
-                  {/* Pending Approvals */}
                   <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                     <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
                       Pending Approvals
@@ -501,7 +340,6 @@ export default function AdminDashboard() {
             {/* ─── CONTENT TAB ──────────────────────────────────── */}
             {activeTab === 'CONTENT' && (
               <div className="space-y-3">
-                {/* Anime Index */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>Anime Index</span>
@@ -533,7 +371,6 @@ export default function AdminDashboard() {
                   </table>
                 </div>
 
-                {/* Novels Index */}
                 <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
                   <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
                     <span>Novels Index</span>
@@ -571,20 +408,16 @@ export default function AdminDashboard() {
           {/* ════ RIGHT SIDEBAR ════════════════════════════════════ */}
           <div className="w-[200px] shrink-0 space-y-3">
 
-            {/* Commands Grid Box */}
             <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
               <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
                 Commands
               </div>
 
-              {/* Clean 3-Column Grid for Symmetric Actions */}
               <div className="p-2 space-y-2">
                 <div className="grid grid-cols-3 gap-1.5">
 
-                  {/* ADD ANIME BOX */}
                   <AddAnime />
 
-                  {/* ADD EPISODE BOX */}
                   <button
                     onClick={() => setIsAddEpisode(true)}
                     className="flex flex-col items-center justify-center p-1.5 bg-[#4a4f5d] hover:bg-[#5c6273] text-white border border-[#34394d] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
@@ -593,7 +426,6 @@ export default function AdminDashboard() {
                     <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">ADD_EPISODE</span>
                   </button>
 
-                  {/* SYSTEM SYNC BOX */}
                   <button
                     onClick={triggerSync}
                     className="flex flex-col items-center justify-center p-1.5 bg-[#1a5c36] hover:bg-[#227a48] text-white border border-[#113d24] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
@@ -604,7 +436,6 @@ export default function AdminDashboard() {
 
                 </div>
 
-                {/* Full Width Modernized History Bar */}
                 <button
                   onClick={() => setActiveTab('TERMINAL')}
                   className="w-full flex items-center justify-center py-2 bg-[#8c6d1d] hover:bg-[#a68224] text-white border border-[#664f14] transition-colors cursor-pointer rounded-sm group"
@@ -617,13 +448,9 @@ export default function AdminDashboard() {
               </div>
 
             </div>
-            {/* Status Box */}
 
+            <Statusbox />
 
-            <Statusbox />   
-
-
-            {/* Navigate / Quick Links Box */}
             <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
               <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
                 Navigate
@@ -646,8 +473,36 @@ export default function AdminDashboard() {
           </div>
         </div>
       </div>
+
       {/* ════ MODALS ════════════════════════════════════════════════ */}
-      
+
+      {/* Add Novel */}
+      {isAddNovel && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
+            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Add Novel</div>
+            <form onSubmit={handleAddNovel} className="p-4 space-y-3">
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Title</label>
+                <input value={novelTitle} onChange={e => setNovelTitle(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" required />
+              </div>
+              <div>
+                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Author</label>
+                <input value={novelAuthor} onChange={e => setNovelAuthor(e.target.value)}
+                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" required />
+              </div>
+              <div className="flex gap-2 pt-1">
+                <button type="button" onClick={() => setIsAddNovel(false)}
+                  className="flex-1 py-1.5 border border-[#999] hover:bg-[#c8cacc] text-[11px] font-bold text-[#34394d] cursor-pointer">CANCEL</button>
+                <button type="submit"
+                  className="flex-1 py-1.5 bg-[#1f3e70] hover:bg-[#254d8c] text-white text-[11px] font-bold border border-[#15305a] cursor-pointer">ADD NOVEL</button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Add Episode */}
       {isAddEpisode && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">

@@ -26,6 +26,7 @@ import {
   LogOut,
   X,
   LayoutDashboard,
+  Home,
 } from "lucide-react";
 
 interface SidebarProps {
@@ -70,7 +71,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     {
       title: "MENU",
       items: [
-        { label: "Home", href: "/search", icon: Search },
+        { label: "Home", href: "/", icon: Home },
         { label: "Search", href: "/search", icon: Search },
         { label: "Season Chart", href: "/season-chart", icon: Calendar },
         { label: "Schedule", href: "/schedule", icon: Clock },
@@ -87,7 +88,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         { label: "Games", href: "/games", icon: Gamepad2 },
         { label: "Series", href: "/series", icon: Clapperboard },
         { label: "Creators", href: "/creators", icon: Users },
-        ...(session ? [{ label: "Admin", href: "/admin", icon: LayoutDashboard, color: "#a11f1f" }] : []),
+        ...(session ? [{ label: "Admin", href: "/admin", icon: LayoutDashboard }] : []),
       ],
     },
     // {
