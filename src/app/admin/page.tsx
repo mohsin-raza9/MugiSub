@@ -18,6 +18,10 @@ import AddEpisode from '@/components/layouts/add_episode';
 import AddSeason from '@/components/layouts/AddSeason';
 import AddNews from '@/components/layouts/add_news';
 import Statusbox from '@/components/layouts/statusbox';
+import { usePathname, useRouter } from 'next/navigation';
+import Link from 'next/link';
+import AdminTab from '@/components/admin/layouts/admin_tab';
+import AdminRightSidebar from '@/components/admin/layouts/admin_right_sidebar';
 
 // ─── Mock Data ────────────────────────────────────────────────────
 const INITIAL_ANIME = [
@@ -54,7 +58,7 @@ const SH = ({ t }: { t: string }) => (
 );
 
 export default function AdminDashboard() {
-  const [activeTab, setActiveTab] = useState<'DATABASE' | 'TERMINAL' | 'USERS' | 'CONTENT'>('DATABASE');
+  const [activeTab, setActiveTab] = useState<'DATABASE' | 'TERMINAL' | 'USERS' | 'Anime'>('DATABASE');
 
   const [animeList, setAnimeList] = useState(INITIAL_ANIME);
   const [novelsList, setNovelsList] = useState(INITIAL_NOVELS);
@@ -252,19 +256,6 @@ export default function AdminDashboard() {
     );
   };
 
-  // ─── Tab button — exact match to "Main | Forum | Outbox" style ─
-  const TabBtn = ({ tab, label }: { tab: typeof activeTab; label: string }) => (
-    <button
-      onClick={() => setActiveTab(tab)}
-      className={`border border-[#999999] px-3 py-1 text-[11px] ml-[2px] transition-colors cursor-pointer font-sans ${activeTab === tab
-        ? 'bg-[#cfd1d4] text-[#1a2536] border-b-[#cfd1d4] mb-[-1px] z-10'
-        : 'bg-[#34394d] text-white hover:bg-[#cfd1d4] hover:text-black border-b-0'
-        }`}
-    >
-      {label}
-    </button>
-  );
-
   const handleFileChange = (file: File, type: 'poster' | 'banner') => {
     if (!file) return;
 
@@ -286,12 +277,7 @@ export default function AdminDashboard() {
     <div className="w-full min-w-0 pt-2 overflow-x-hidden">
 
       {/* ── Tab Navigation — identical to Main/Forum/Outbox style ── */}
-      <div className="flex justify-end pr-2 gap-0 mb-0">
-        <TabBtn tab="DATABASE" label="Database" />
-        <TabBtn tab="TERMINAL" label="Terminal" />
-        <TabBtn tab="USERS" label="Users" />
-        <TabBtn tab="CONTENT" label="Content" />
-      </div>
+      <AdminTab />
 
       {/* ── Main content container — matches page.tsx's content div ─ */}
       <div className="w-full min-w-0 p-3 lg:p-4 lg:ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-3 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-hidden">
@@ -487,186 +473,13 @@ export default function AdminDashboard() {
                 </div>
               </div>
             )}
-
-            {/* ─── CONTENT TAB ──────────────────────────────────── */}
-            {activeTab === 'CONTENT' && (
-              <div className="space-y-3">
-                {/* Anime Index */}
-                <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
-                  <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
-                    <span>Anime Index</span>
-                    <button onClick={() => setIsAddAnime(true)}
-                      className="bg-[#a11f1f] hover:bg-[#c02222] text-white text-[9px] font-bold px-2 py-0.5 border border-[#7a1515] cursor-pointer uppercase">
-                      + Add
-                    </button>
-                  </div>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">ID</th>
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Title</th>
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Type</th>
-                        <th className="px-2 py-1.5 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {animeList.map((a, i) => (
-                        <tr key={a.id}
-                          className={`text-[11.5px] border-b border-[#999]/40 hover:bg-white/30 transition-colors ${i % 2 === 0 ? 'bg-[#bdbfc3]' : 'bg-[#cfd1d4]'}`}>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30 font-mono font-bold text-[#1f3e70]">{a.id}</td>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30">{a.title}</td>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30 text-[10px] text-[#555]">{a.type}</td>
-                          <td className="px-2 py-1.5 text-center"><span className={statusBadge(a.status)}>{a.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-
-                {/* Novels Index */}
-                <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
-                  <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
-                    <span>Novels Index</span>
-                    <button onClick={() => setIsAddNovel(true)}
-                      className="bg-[#1f3e70] hover:bg-[#254d8c] text-white text-[9px] font-bold px-2 py-0.5 border border-[#15305a] cursor-pointer uppercase">
-                      + Add
-                    </button>
-                  </div>
-                  <table className="w-full border-collapse">
-                    <thead>
-                      <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">ID</th>
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Title</th>
-                        <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Author</th>
-                        <th className="px-2 py-1.5 text-center">Status</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {novelsList.map((n, i) => (
-                        <tr key={n.id}
-                          className={`text-[11.5px] border-b border-[#999]/40 hover:bg-white/30 transition-colors ${i % 2 === 0 ? 'bg-[#bdbfc3]' : 'bg-[#cfd1d4]'}`}>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30 font-mono font-bold text-[#1f3e70]">{n.id}</td>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30">{n.title}</td>
-                          <td className="px-2 py-1.5 border-r border-[#999]/30 text-[10px] text-[#555]">{n.author}</td>
-                          <td className="px-2 py-1.5 text-center"><span className={statusBadge(n.status)}>{n.status}</span></td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </div>
-            )}
           </div>
 
           {/* ════ RIGHT SIDEBAR ════════════════════════════════════ */}
-          <div className="w-[200px] shrink-0 space-y-3">
-
-            {/* Commands Grid Box */}
-            <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
-              <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
-                Commands
-              </div>
-
-              {/* Clean 3-Column Grid for Symmetric Actions */}
-              <div className="p-2 space-y-2">
-                <div className="grid grid-cols-3 gap-1.5">
-
-                  {/* ADD ANIME BOX */}
-                  <AddAnime />
-
-                  {/* ADD EPISODE BOX */}
-                  <AddEpisode />
-
-                  {/* ADD SEASON BOX */}
-                  <AddSeason />
-
-                </div>
-
-                {/* Full Width Add News Button */}
-                <AddNews />
-
-                {/* Full Width Modernized History Bar */}
-                <button
-                  onClick={() => setActiveTab('TERMINAL')}
-                  className="w-full flex items-center justify-center py-2 bg-[#8c6d1d] hover:bg-[#a68224] text-white border border-[#664f14] transition-colors cursor-pointer rounded-sm group"
-                >
-                  <div className="flex items-center gap-1.5">
-                    <History size={13} className="group-hover:translate-x-[-1px] transition-transform" />
-                    <span className="text-[9px] font-mono font-bold tracking-wider">VIEW HISTORY</span>
-                  </div>
-                </button>
-              </div>
-
-            </div>
-            {/* Status Box */}
-
-
-            <Statusbox />   
-
-
-            {/* Navigate / Quick Links Box */}
-            <div className="bg-[#bdbfc3] border border-[#8c8f94] shadow-[1px_1px_2px_rgba(0,0,0,0.2)]">
-              <div className="bg-[#2a3243] text-white font-mono font-bold text-[10px] tracking-wider px-2 py-1.5 uppercase border-b border-[#1a202c]">
-                Navigate
-              </div>
-              <ul className="py-1 text-[11px] bg-[#caccce]">
-                {([['Database', 'DATABASE'], ['Terminal', 'TERMINAL'], ['Users', 'USERS'], ['Content', 'CONTENT']] as const).map(([l, t]) => (
-                  <li key={t}>
-                    <button
-                      onClick={() => setActiveTab(t)}
-                      className="w-full flex items-center gap-1 px-3 py-1.5 hover:bg-[#2a3243] hover:text-white text-[#2a3243] font-medium transition-colors cursor-pointer text-left"
-                    >
-                      <ChevronRight size={10} className="opacity-70" />
-                      {l}
-                    </button>
-                  </li>
-                ))}
-              </ul>
-            </div>
-
-          </div>
+          <AdminRightSidebar />
         </div>
       </div>
-      {/* ════ MODALS ════════════════════════════════════════════════ */}
       
-
-
-      {/* Sync Progress */}
-      {isSyncing && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
-            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">System Sync</div>
-            <div className="p-4 space-y-3">
-              <div className="flex justify-between text-[11px] font-mono text-[#1a2536]">
-                <span className="flex items-center gap-1"><Loader2 size={12} className="animate-spin text-[#1a5c36]" /> Syncing...</span>
-                <span className="font-bold">{syncProgress}%</span>
-              </div>
-              <div className="h-2 bg-[#999]/30"><div className="h-full bg-[#1a5c36]" style={{ width: `${syncProgress}%` }} /></div>
-              <div className="bg-[#111827] p-2 h-24 overflow-y-auto font-mono text-[9px] text-[#4ade80] space-y-0.5">
-                {syncLogs.map((l, i) => <div key={i}>{l}</div>)}
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Sync Success */}
-      {syncSuccess && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#bdbfc3] border border-[#999] w-72 shadow-xl text-center">
-            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Sync Complete</div>
-            <div className="p-5">
-              <CheckCircle2 size={32} className="text-[#1a5c36] mx-auto mb-3" />
-              <p className="text-[11px] font-mono font-bold text-[#1a2536]">DATABASE SYNCHRONISED</p>
-              <p className="text-[9px] text-[#555] mt-1">All nodes verified. CDN caches invalidated.</p>
-              <button onClick={() => setSyncSuccess(false)}
-                className="mt-4 px-6 py-1.5 bg-[#1a5c36] hover:bg-[#236b40] text-white text-[11px] font-bold border border-[#134526] cursor-pointer">
-                DISMISS
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
