@@ -63,7 +63,7 @@ export namespace MugiSub {
     ratingCount: number;
     average?: number | null;
     averageCount: number;
-    
+
     // Relations / Joined data
     studios?: Studio[];
     episodes?: Episode[];
@@ -108,7 +108,7 @@ export namespace MugiSub {
     downloadUrl?: string | null;
     isNew: boolean;
     createdAt: Date;
-    
+
     episode?: Episode;
     group?: FansubGroup;
   }
@@ -176,7 +176,7 @@ export namespace MugiSub {
     rating?: number | null; // 1 to 10
     notes?: string | null;
     updatedAt: Date;
-    
+
     episode?: Episode;
   }
 
@@ -195,7 +195,7 @@ export namespace MugiSub {
     content: string;
     rating: number; // 1 to 10
     createdAt: Date;
-    
+
     user?: User;
     anime?: Anime;
   }
@@ -232,7 +232,7 @@ export namespace MugiSub {
     title: string;
     viewsCount: number;
     createdAt: Date;
-    
+
     category?: ForumCategory;
     creator?: User;
     posts?: ForumPost[];
@@ -245,7 +245,7 @@ export namespace MugiSub {
     content: string;
     parentId?: string | null;
     createdAt: Date;
-    
+
     thread?: ForumThread;
     author?: User;
     parent?: ForumPost | null;
@@ -264,7 +264,7 @@ export namespace MugiSub {
     status: "pending" | "approved" | "rejected";
     reviewerId?: string | null;
     createdAt: Date;
-    
+
     user?: User;
   }
 

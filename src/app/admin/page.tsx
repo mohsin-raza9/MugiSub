@@ -6,9 +6,6 @@ import {
   BookOpen,
   Users,
   Zap,
-  PlayCircle,
-  PlusCircle,
-  RefreshCw,
   History,
   Loader2,
   CheckCircle2,
@@ -17,6 +14,9 @@ import {
 } from 'lucide-react';
 import UsersTable from '@/components/admin/tables/UsersTable';
 import AddAnime from '@/components/layouts/add_anime';
+import AddEpisode from '@/components/layouts/add_episode';
+import AddSeason from '@/components/layouts/AddSeason';
+import AddNews from '@/components/layouts/add_news';
 import Statusbox from '@/components/layouts/statusbox';
 
 // ─── Mock Data ────────────────────────────────────────────────────
@@ -76,7 +76,6 @@ export default function AdminDashboard() {
   // Modals
   const [isAddAnime, setIsAddAnime] = useState(false);
   const [isAddNovel, setIsAddNovel] = useState(false);
-  const [isAddEpisode, setIsAddEpisode] = useState(false);
 
   // Forms States (Extended for DB Schema)
   const [animeTitle, setAnimeTitle] = useState('');
@@ -98,12 +97,9 @@ export default function AdminDashboard() {
   const [posterName, setPosterName] = useState('');
   const [bannerName, setBannerName] = useState('');
 
-  // Novel & Episode Form States
+  // Novel Form States
   const [novelTitle, setNovelTitle] = useState('');
   const [novelAuthor, setNovelAuthor] = useState('');
-  const [epAnime, setEpAnime] = useState('');
-  const [epNum, setEpNum] = useState(1);
-  const [epTitle, setEpTitle] = useState('');
 
   // Sync
   const [isSyncing, setIsSyncing] = useState(false);
@@ -228,13 +224,7 @@ export default function AdminDashboard() {
     setNovelTitle(''); setNovelAuthor(''); setIsAddNovel(false);
   };
 
-  const handleAddEpisode = (e: React.FormEvent) => {
-    e.preventDefault();
-    setReleaseCount(p => p + 1);
-    const anime = animeList.find(a => a.id === epAnime);
-    addLog(`ADMIN    : Added Episode #${epNum} for "${anime?.title || epAnime}"`);
-    setEpTitle(''); setIsAddEpisode(false);
-  };
+
 
   // ─── Sidebar command button — matches site's button style ─────
   const CmdBtn = ({
@@ -585,24 +575,15 @@ export default function AdminDashboard() {
                   <AddAnime />
 
                   {/* ADD EPISODE BOX */}
-                  <button
-                    onClick={() => setIsAddEpisode(true)}
-                    className="flex flex-col items-center justify-center p-1.5 bg-[#4a4f5d] hover:bg-[#5c6273] text-white border border-[#34394d] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
-                  >
-                    <PlayCircle size={15} className="mb-0.5 group-hover:scale-110 transition-transform" />
-                    <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">ADD_EPISODE</span>
-                  </button>
+                  <AddEpisode />
 
-                  {/* SYSTEM SYNC BOX */}
-                  <button
-                    onClick={triggerSync}
-                    className="flex flex-col items-center justify-center p-1.5 bg-[#1a5c36] hover:bg-[#227a48] text-white border border-[#113d24] transition-colors cursor-pointer rounded-sm group min-h-[58px]"
-                  >
-                    <RefreshCw size={15} className="mb-0.5 group-hover:rotate-45 transition-transform" />
-                    <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">SYS_SYNC</span>
-                  </button>
+                  {/* ADD SEASON BOX */}
+                  <AddSeason />
 
                 </div>
+
+                {/* Full Width Add News Button */}
+                <AddNews />
 
                 {/* Full Width Modernized History Bar */}
                 <button
@@ -648,42 +629,7 @@ export default function AdminDashboard() {
       </div>
       {/* ════ MODALS ════════════════════════════════════════════════ */}
       
-      {/* Add Episode */}
-      {isAddEpisode && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-[#bdbfc3] border border-[#999] w-80 shadow-xl">
-            <div className="bg-[#34394d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635]">Add Episode</div>
-            <form onSubmit={handleAddEpisode} className="p-4 space-y-3">
-              <div>
-                <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Anime</label>
-                <select value={epAnime} onChange={e => setEpAnime(e.target.value)}
-                  className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none cursor-pointer">
-                  {animeList.map(a => <option key={a.id} value={a.id}>{a.title}</option>)}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-2">
-                <div>
-                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Ep No.</label>
-                  <input type="number" min={1} value={epNum} onChange={e => setEpNum(+e.target.value)}
-                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none" />
-                </div>
-                <div>
-                  <label className="block text-[10px] text-[#34394d] font-bold uppercase mb-1">Title</label>
-                  <input value={epTitle} onChange={e => setEpTitle(e.target.value)}
-                    className="w-full bg-[#f0f5ff] border border-[#999] px-2 py-1 text-[11px] text-black outline-none"
-                    placeholder="Optional" />
-                </div>
-              </div>
-              <div className="flex gap-2 pt-1">
-                <button type="button" onClick={() => setIsAddEpisode(false)}
-                  className="flex-1 py-1.5 border border-[#999] hover:bg-[#c8cacc] text-[11px] font-bold text-[#34394d] cursor-pointer">CANCEL</button>
-                <button type="submit"
-                  className="flex-1 py-1.5 bg-[#34394d] hover:bg-[#12151f] text-white text-[11px] font-bold border border-[#1c2331] cursor-pointer">ADD EP</button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
+
 
       {/* Sync Progress */}
       {isSyncing && (
