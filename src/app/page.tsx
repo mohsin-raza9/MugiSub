@@ -151,14 +151,6 @@ export default function Home() {
     }
   ];
 
-  
-
-  
-
-  
-
-  
-
   if (showAuth) {
     return (
       <div className="w-full min-h-screen p-4">

@@ -16,7 +16,7 @@ datasource db {
 enum Role {
   User
   Developer
-  Admin
+  SEO
   SuperAdmin
 }
 
@@ -117,38 +117,28 @@ model Profile {
 // ==========================================
 
 enum AnimeType {
-  TV
   Movie
-  OVA
-  ONA
-  Web
-  Special
+  Season
+  Daram
 }
 
 enum AnimeStatus {
   Airing
   Finished
   Upcoming
-  Hiatus
 }
 
 model Anime {
   id            String      @id @default(uuid())
-  titleRomaji   String
-  titleEnglish  String?
-  titleJapanese String?
+  title         String
   description   String?
   type          AnimeType
   status        AnimeStatus
-  airDate       String?     // e.g., "1st April" or "17.05.2026"
-  endDate       String?
-  nextEpisodeAt DateTime?   // powers "Airing Soon" countdown
+  airDate       String?
   image         String?
   bannerImage   String?
   trailerUrl    String?
-  videoUrl      String?     // Movie video URL (Cloudinary)
   episodesCount Int?
-  ageRating     String?     // "G", "PG-13", "R", ...
   rating        Float?
   ratingCount   Int         @default(0)
   average       Float?
@@ -171,6 +161,7 @@ model Anime {
   playlistItems    PlaylistItem[]
   newsMentions     NewsAnime[]
   curatedListItems CuratedListItem[]
+  subtitle          Subtitle[]
   seasons Season[]
 
   @@index([status])
@@ -184,6 +175,7 @@ model Season {
   animeId String
   number  Int             
   title   String?     
+  description String?
   anime   Anime     @relation(fields: [animeId], references: [id], onDelete: Cascade)
   episodes Episode[]
 
@@ -209,16 +201,17 @@ model AnimeStudio {
 
 model Episode {
   id            String          @id @default(uuid())
-  animeId       String
   episodeNumber Int
   title         String?
-  lengthMinutes Int?
+  description   String?
   airDate       String?
-  anime         Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  animeId       String
+  seasonId      String?
   mylistEntries MyListEntry[]
   subtitles     Subtitle[]
   watchHistory  WatchHistory[]
-  seasonId String?
+
+  anime         Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
   season   Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
 
   @@unique([animeId, episodeNumber])
@@ -237,7 +230,8 @@ enum SubtitleFormat {
 
 model Subtitle {
   id           String         @id @default(uuid())
-  episodeId    String
+  episodeId    String?
+  animeId      String?
   language     String         // ISO code, e.g. "en", "ur", "ja"
   languageName String         // "English", "Urdu", "Japanese"
   format       SubtitleFormat @default(SRT)
@@ -249,11 +243,12 @@ model Subtitle {
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
-  episode    Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-  uploadedBy User?   @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
+  episode    Episode? @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  anime      Anime?   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  uploadedBy User?    @relation(fields: [uploadedById], references: [id], onDelete: SetNull)
 
-  @@unique([episodeId, language, format])
   @@index([episodeId])
+  @@index([animeId])
   @@index([language])
 }
 
