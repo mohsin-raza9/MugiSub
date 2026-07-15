@@ -176,6 +176,12 @@ export default function Home() {
         >
           Main
         </Link>
+            <Link
+          href="/forum"
+          className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:bg-[#cfd1d4] hover:text-black ml-[2px]"
+        >
+          blog
+        </Link>
         <Link
           href="/forum"
           className="bg-[#34394d] border border-[#999999] border-b-0 px-3 py-1 text-[11px] text-white hover:bg-[#cfd1d4] hover:text-black ml-[2px]"
@@ -197,6 +203,7 @@ export default function Home() {
         <div className="bg-[#34394d] text-[#ddd] p-3 py-1.5 border border-[#1c2331] font-bold text-[15px] uppercase tracking-wide shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
           Main
         </div>
+        
 
         <section className="grid grid-cols-1 md:grid-cols-2 gap-2 h-full">
           <News />

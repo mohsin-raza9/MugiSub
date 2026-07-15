@@ -12,7 +12,6 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
-import UsersTable from '@/components/admin/tables/UsersTable';
 import AddAnime from '@/components/layouts/add_anime';
 import AddEpisode from '@/components/layouts/add_episode';
 import AddSeason from '@/components/layouts/AddSeason';
@@ -458,18 +457,6 @@ export default function AdminDashboard() {
                   {logs.length === 0 && (
                     <div className="text-[#4ade80]/40 italic">No logs. Perform an action to see history.</div>
                   )}
-                </div>
-              </div>
-            )}
-
-            {/* ─── USERS TAB ────────────────────────────────────── */}
-            {activeTab === 'USERS' && (
-              <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
-                <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
-                  User Management
-                </div>
-                <div className="p-3">
-                  <UsersTable />
                 </div>
               </div>
             )}

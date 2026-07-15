@@ -12,7 +12,6 @@ import {
     ChevronRight,
     TrendingUp,
 } from 'lucide-react';
-import UsersTable from '@/components/admin/tables/UsersTable';
 import AddAnime from '@/components/layouts/add_anime';
 import AddEpisode from '@/components/layouts/add_episode';
 import AddSeason from '@/components/layouts/AddSeason';

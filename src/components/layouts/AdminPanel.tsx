@@ -15,7 +15,6 @@ import {
   ChevronRight,
   TrendingUp,
 } from 'lucide-react';
-import UsersTable from '@/components/admin/tables/UsersTable';
 import AddAnime from '@/components/layouts/add_anime';
 import Statusbox from '@/components/layouts/statusbox';
 
@@ -325,17 +324,6 @@ export default function AdminPanel() {
               </div>
             )}
 
-            {/* ─── USERS TAB ────────────────────────────────────── */}
-            {activeTab === 'USERS' && (
-              <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
-                <div className="text-black py-1.5 px-3 font-bold text-[13px] border-b border-[#999]">
-                  User Management
-                </div>
-                <div className="p-3">
-                  <UsersTable />
-                </div>
-              </div>
-            )}
 
             {/* ─── CONTENT TAB ──────────────────────────────────── */}
             {activeTab === 'CONTENT' && (
