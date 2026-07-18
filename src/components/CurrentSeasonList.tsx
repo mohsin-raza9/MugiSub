@@ -1,30 +1,22 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useAnimeStore } from "@/store/animeStore";
+
+const dateFormat = (data: string): string => {
+  const date = new Date(data);
+
+  const d = String(date.getUTCDate()).padStart(2, '0');
+  const m = String(date.getUTCMonth() + 1).padStart(2, '0');
+  const y = String(date.getUTCFullYear()).slice(-4);
+
+  const simpleDate = `${d}-${m}-${y}`;
+  return simpleDate;
+}
 
 export default function CurrentSeasonList() {
-  const [animes, setAnimes] = useState<any[]>([]);
-  const [loading, setLoading] = useState(true);
+  const { animes, isLoading } = useAnimeStore()
 
-  useEffect(() => {
-    async function fetchAnime() {
-      try {
-        const res = await fetch('/api/anime?category=current-season');
-        const json = await res.json();
-        if (res.ok && json.data) {
-          setAnimes(json.data);
-        } else {
-          setAnimes([]);
-        }
-      } catch (error) {
-        setAnimes([]);
-      } finally {
-        setLoading(false);
-      }
-    }
-    fetchAnime();
-  }, []);
 
   return (
     <section className="w-full min-w-0 flex flex-col font-sans overflow-hidden">
@@ -42,14 +34,14 @@ export default function CurrentSeasonList() {
       {/* Dynamic 6-Column Grid Wrapper */}
       <div className="mt-1 min-w-0">
         <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 lg:grid-cols-6 gap-2">
-          {loading ? (
+          {isLoading ? (
             // Skeleton Loaders
             Array.from({ length: 6 }).map((_, index) => (
               <div
                 key={index}
                 className="bg-[#bdbfc3] border border-[#b0b7c0] p-2 flex flex-col shadow-sm animate-pulse"
               >
-                <div className="w-full aspect-[3/4] bg-gray-400 mb-2"></div>
+                <div className="w-full aspect-3/4 bg-gray-400 mb-2"></div>
                 <div className="h-3 bg-gray-400 rounded w-3/4 mb-2"></div>
                 <div className="h-2 bg-gray-400 rounded w-1/2 mb-1"></div>
                 <div className="h-2 bg-gray-400 rounded w-1/3"></div>
@@ -59,24 +51,23 @@ export default function CurrentSeasonList() {
             animes.map((anime, index) => (
               <div
                 key={index}
-                className="bg-[#bdbfc3] border border-[#b0b7c0] p-2 flex flex-col justify-between font-sans shadow-sm"
+                className="bg-[#bdbfc3] border border-[#b0b7c0] p-2 flex flex-col justify-between font-sans shadow-sm hover:border-[#3e455c] transition-colors"
               >
                 <div className="flex flex-col gap-1.5">
                   {/* sharp poster frame */}
-                  <div className="w-full aspect-[3/4] overflow-hidden relative bg-gray-300">
+                  <div className="w-full aspect-3/4 overflow-hidden relative bg-gray-300">
                     {/* eslint-disable-next-line @next/next/no-img-element */}
                     <img
                       src={anime.image || "https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80"}
-                      alt={anime.titleRomaji}
+                      alt={anime.title}
                       className="w-full h-full object-cover animate-fade-in"
                     />
                   </div>
 
                   {/* Title & Info icon */}
                   <div className="text-[13px] leading-snug">
-                    <span className="inline-flex items-center justify-center bg-[#1f5da1] text-white text-[8px] font-bold rounded-full w-3.5 h-3.5 shrink-0 select-none mr-1 align-middle">i</span>
                     <Link href={`/anime/${anime.id}`} className="text-[#a11f1f] font-bold hover:underline align-middle">
-                      {anime.titleRomaji}
+                      Anime: {anime.title}
                     </Link>
                   </div>
                 </div>
@@ -84,7 +75,7 @@ export default function CurrentSeasonList() {
                 {/* Metadata & rating block */}
                 <div className="text-[10px] text-black">
                   <div>
-                    <span className="font-bold text-black text-[12px]">{anime.airDate || "TBA"}</span>
+                    <span className="font-bold text-black text-[12px]">{dateFormat(anime.releaseDate || "") || "TBA"}</span>
                   </div>
                   <div className="text-[11px]">
                     <span>{anime.type}</span>

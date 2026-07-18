@@ -1,214 +1,235 @@
 'use client';
 
-import React, { useState } from 'react';
-import { Film } from "lucide-react";
-import ImageUpload from '../admin/uploads/ImageUpload';
-import BannerUpload from '../admin/uploads/BannerUpload';
-import TrailerUpload from '../admin/uploads/TrailerUpload';
+import React, { useState, useEffect } from 'react';
+import { Film, X, FileText } from 'lucide-react';
 import SubtitleUpload from '../admin/uploads/SubtitleUpload';
 import { deleteFromCloudinary } from '@/utils/upload';
 
-export interface MoviePayload {
-  type: 'movie';
-  title: string;
-  description: string;
-  status: 'Airing' | 'Finished' | 'Upcoming';
-  upcomingDate?: string;
-  imageUrl: string | null;
-  imagePublicId: string | null;
-  bannerUrl: string | null;
-  bannerPublicId: string | null;
-  trailerUrl: string | null;
-  trailerPublicId: string | null;
-  subtitleUrl?: string | null;
-  subtitlePublicId?: string | null;
+// ─── Types ───────────────────────────────────────────────────────────
+interface MovieEntry {
+  animeId: string;
+  subtitleUrl: string | null;
+  subtitlePublicId: string | null;
+  language: string;
+  languageName: string;
+  format: string;
+  isVerified: boolean;
 }
 
+const emptyEntry: MovieEntry = {
+  animeId: '',
+  subtitleUrl: null,
+  subtitlePublicId: null,
+  language: 'en',
+  languageName: 'English',
+  format: 'SRT',
+  isVerified: false,
+};
+
+type Step = 'FORM';
+
+// ─── Component ───────────────────────────────────────────────────────
 const AddMovie = () => {
-  const [isOpen, setIsOpen] = useState<boolean>(false);
-  const [step, setStep] = useState<'FORM' | 'SUBTITLE'>('FORM');
+  const [isOpen, setIsOpen] = useState(false);
+  const [step, setStep] = useState<Step>('FORM');
+  const [entry, setEntry] = useState<MovieEntry>({ ...emptyEntry });
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [animeList, setAnimeList] = useState<{ id: string, title: string }[]>([]);
 
-  const [payload, setPayload] = useState<MoviePayload>({
-    type: 'movie',
-    title: '',
-    description: '',
-    status: 'Upcoming',
-    upcomingDate: '',
-    imageUrl: null,
-    imagePublicId: null,
-    bannerUrl: null,
-    bannerPublicId: null,
-    trailerUrl: null,
-    trailerPublicId: null,
-    subtitleUrl: null,
-    subtitlePublicId: null,
-  });
-
-  const updatePayload = (fields: Partial<MoviePayload>) => {
-    setPayload(prev => ({ ...prev, ...fields }));
+  const updateEntry = (fields: Partial<MovieEntry>) => {
+    setEntry(prev => ({ ...prev, ...fields }));
   };
 
-  const handleFormSubmit = (e: React.FormEvent) => {
+  // Fetch Anime list when modal opens
+  useEffect(() => {
+    if (isOpen) {
+      fetch('/api/admin/anime?select=true&type=Movie')
+        .then(res => res.json())
+        .then(data => setAnimeList(data))
+        .catch(err => console.error("Failed to fetch anime", err));
+    }
+  }, [isOpen]);
+
+  const handleCommit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setStep('SUBTITLE');
-  };
-
-  const finalizeFlow = async () => {
+    if (!entry.subtitleUrl) {
+      alert('Please upload a subtitle file.');
+      return;
+    }
     setIsSubmitting(true);
     try {
-      const response = await fetch('/api/admin/anime', {
+      const response = await fetch('/api/admin/subtitle', {
         method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(payload),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          animeId: entry.animeId,
+          fileUrl: entry.subtitleUrl,
+          language: entry.language,
+          languageName: entry.languageName,
+          format: entry.format,
+          isVerified: entry.isVerified,
+        }),
       });
 
       if (!response.ok) {
-        throw new Error('Failed to create Movie record');
+        const err = await response.json();
+        throw new Error(err.error || 'Failed to save subtitle');
       }
 
-      console.log(`Movie created successfully.`);
-      
+      console.log('Movie Subtitle Saved');
       setIsOpen(false);
       resetState();
-    } catch (error) {
+    } catch (error: any) {
       console.error('API Error:', error);
-      alert('Failed to save the movie. Please try again.');
+      alert(error.message);
     } finally {
       setIsSubmitting(false);
     }
   };
 
   const handleCancel = async () => {
-    if (payload.imagePublicId) await deleteFromCloudinary(payload.imagePublicId);
-    if (payload.bannerPublicId) await deleteFromCloudinary(payload.bannerPublicId);
-    if (payload.trailerPublicId) await deleteFromCloudinary(payload.trailerPublicId);
-    if (payload.subtitlePublicId) await deleteFromCloudinary(payload.subtitlePublicId);
-
+    if (entry.subtitlePublicId) {
+      try {
+        await deleteFromCloudinary(entry.subtitlePublicId);
+      } catch (error) {
+        console.error("Error cleaning up subtitle", error);
+      }
+    }
     setIsOpen(false);
     resetState();
   };
 
   const resetState = () => {
     setStep('FORM');
-    setPayload({
-      type: 'movie',
-      title: '',
-      description: '',
-      status: 'Upcoming',
-      upcomingDate: '',
-      imageUrl: null,
-      imagePublicId: null,
-      bannerUrl: null,
-      bannerPublicId: null,
-      trailerUrl: null,
-      trailerPublicId: null,
-      subtitleUrl: null,
-      subtitlePublicId: null,
-    });
+    setEntry({ ...emptyEntry });
   };
 
-  const folderName = payload.title.trim() ? payload.title.trim().replace(/[^a-zA-Z0-9]/g, '_') : 'Untitled';
+  const folderName = entry.animeId && animeList.find(a => a.id === entry.animeId)
+    ? animeList.find(a => a.id === entry.animeId)!.title.replace(/[^a-zA-Z0-9]/g, '_')
+    : 'Untitled_Movie';
 
   return (
     <>
+      {/* Command Button */}
       <button
         onClick={() => setIsOpen(true)}
         type="button"
-        className="flex flex-col items-center justify-center p-1.5 bg-[#a11f1f] hover:bg-[#c02222] text-white border border-[#7a1515] transition-colors cursor-pointer rounded-sm group min-h-[58px] w-full"
+        className="flex flex-col items-center justify-center p-1.5 bg-[#5c4a1a] hover:bg-[#6e5a20] text-white border border-[#42360f] transition-colors cursor-pointer rounded-sm group min-h-[58px] w-full"
       >
         <Film size={15} className="mb-0.5 group-hover:scale-110 transition-transform" />
-        <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">ADD_MOVIE</span>
+        <span className="text-[8px] font-mono font-bold tracking-tight text-center leading-tight">ADD_MOVIE_SUB</span>
       </button>
 
+      {/* Modal */}
       {isOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4">
           <div className="bg-[#bdbfc3] border border-[#787b80] w-[500px] shadow-[2px_2px_10px_rgba(0,0,0,0.5)] flex flex-col">
-            
+
+            {/* Header */}
             <div className="bg-[#2a3243] text-white font-mono font-bold uppercase tracking-wide px-3 py-2 text-[11px] border-b border-[#1a202c] flex justify-between items-center shrink-0">
-              <span>ADD NEW MOVIE</span>
-              <button type="button" onClick={handleCancel} className="hover:text-red-400 font-bold cursor-pointer">X</button>
+              <span>ADD MOVIE SUBTITLE</span>
+              <button type="button" onClick={handleCancel} disabled={isSubmitting} className="hover:text-red-400 font-bold cursor-pointer disabled:opacity-50">
+                <X />
+              </button>
             </div>
 
-            <div className="p-4 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar text-left flex-1 min-h-0">
-              
+            {/* Content */}
+            <div className="p-3 space-y-4 max-h-[85vh] overflow-y-auto custom-scrollbar text-left flex-1 min-h-0">
+
               {step === 'FORM' && (
-                <form onSubmit={handleFormSubmit} className="space-y-4">
+                <form onSubmit={handleCommit} className="space-y-2">
+
+                  {/* DETAILS Section */}
                   <div className="space-y-2 bg-[#caccce] p-2 border border-[#9fa2a8]">
-                    <span className="text-[9px] font-mono font-bold text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// DETAILS</span>
+                    <span className="text-[10px] font-black tracking-wider text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">SELECT MOVIE</span>
+
+                    {/* Anime Name */}
                     <div>
-                      <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Title *</label>
-                      <input required type="text" value={payload.title} onChange={e => updatePayload({ title: e.target.value })}
-                        className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]"
-                        placeholder="Title..." />
-                    </div>
-                    <div>
-                      <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5 mt-2">Description</label>
-                      <textarea value={payload.description} onChange={e => updatePayload({ description: e.target.value })}
-                        rows={3}
-                        className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243] resize-none"
-                        placeholder="Description..." />
+                      <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Movie Name<span className="text-red-700">*</span></label>
+                      <select
+                        required
+                        value={entry.animeId}
+                        onChange={e => updateEntry({ animeId: e.target.value })}
+                        className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none cursor-pointer focus:border-[#2a3243]"
+                      >
+                        <option value="">-- Select Movie --</option>
+                        {animeList.map(a => (
+                          <option key={a.id} value={a.id}>{a.title}</option>
+                        ))}
+                      </select>
                     </div>
                   </div>
 
+                  {/* Subtitle Upload */}
                   <div className="space-y-2 bg-[#caccce] p-2 border border-[#9fa2a8]">
-                    <span className="text-[9px] font-mono font-bold text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// STATUS</span>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-1">Airing Status *</label>
-                        <select value={payload.status} onChange={e => updatePayload({ status: e.target.value as any })}
-                          className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none cursor-pointer focus:border-[#2a3243]">
-                          <option value="Upcoming">Upcoming</option>
-                          <option value="Finished">Finished</option>
-                          <option value="Airing" disabled className="text-gray-400">Airing (Disabled)</option>
-                        </select>
-                      </div>
-                      
-                      {payload.status === 'Upcoming' && (
-                        <div>
-                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-1">Upcoming Date</label>
-                          <input type="date" value={payload.upcomingDate} onChange={e => updatePayload({ upcomingDate: e.target.value })}
-                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]" />
-                        </div>
-                      )}
-                    </div>
-                  </div>
+                    <span className="text-[10px] font-black tracking-wider text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">SUBTITLE</span>
 
-                  <div className="space-y-2 bg-[#caccce] p-2 border border-[#9fa2a8]">
-                    <span className="text-[9px] font-mono font-bold text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// MEDIA RESOURCES (UPLOADS TO: {folderName})</span>
-                    
-                    {!payload.title.trim() && (
-                      <div className="text-[10px] text-red-600 font-bold mb-2">Please enter a Title first to enable uploads.</div>
+                    {!entry.animeId && (
+                      <div className="text-[10px] text-red-600 font-bold mb-2">Please select a Movie first to enable uploads.</div>
                     )}
-                    
-                    <div className={`grid grid-cols-2 gap-3 ${!payload.title.trim() ? 'opacity-50 pointer-events-none' : ''}`}>
-                      <ImageUpload folderName={folderName} currentUrl={payload.imageUrl} currentPublicId={payload.imagePublicId} onUpload={(url, id) => updatePayload({ imageUrl: url, imagePublicId: id })} onRemove={() => updatePayload({ imageUrl: null, imagePublicId: null })} />
-                      <BannerUpload folderName={folderName} currentUrl={payload.bannerUrl} currentPublicId={payload.bannerPublicId} onUpload={(url, id) => updatePayload({ bannerUrl: url, bannerPublicId: id })} onRemove={() => updatePayload({ bannerUrl: null, bannerPublicId: null })} />
-                      <TrailerUpload folderName={folderName} currentUrl={payload.trailerUrl} currentPublicId={payload.trailerPublicId} onUpload={(url, id) => updatePayload({ trailerUrl: url, trailerPublicId: id })} onRemove={() => updatePayload({ trailerUrl: null, trailerPublicId: null })} />
+
+                    <div className={`${!entry.animeId ? 'opacity-50 pointer-events-none' : ''}`}>
+                      <SubtitleUpload
+                        folderName={folderName}
+                        currentUrl={entry.subtitleUrl}
+                        currentPublicId={entry.subtitlePublicId}
+                        onUpload={(url, id) => updateEntry({ subtitleUrl: url, subtitlePublicId: id })}
+                        onRemove={() => updateEntry({ subtitleUrl: null, subtitlePublicId: null })}
+                      />
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Language Code</label>
+                          <input type="text" value={entry.language} onChange={e => updateEntry({ language: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]"
+                            placeholder="en" />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Language Name</label>
+                          <input type="text" value={entry.languageName} onChange={e => updateEntry({ languageName: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]"
+                            placeholder="English" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Format</label>
+                          <select value={entry.format} onChange={e => updateEntry({ format: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]">
+                            <option value="SRT">SRT</option>
+                            <option value="ASS">ASS</option>
+                            <option value="VTT">VTT</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2 text-[10px] text-[#222735] font-mono font-bold uppercase cursor-pointer">
+                            <input type="checkbox" checked={entry.isVerified} onChange={e => updateEntry({ isVerified: e.target.checked })}
+                              className="h-4 w-4 text-[#1a5c36] focus:ring-[#1a5c36] border-[#8c8f94] rounded" />
+                            Is Verified
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
 
+                  {/* ACTION BUTTONS */}
                   <div className="flex gap-2 pt-2 border-t border-[#9fa2a8]">
-                    <button type="button" onClick={handleCancel} className="flex-1 py-1.5 border border-[#8c8f94] bg-[#caccce] hover:bg-[#b8babb] text-[11px] font-mono font-bold text-[#222735] cursor-pointer">CANCEL</button>
-                    <button type="submit" className="flex-1 py-1.5 bg-[#a11f1f] hover:bg-[#c02222] text-white text-[11px] font-mono font-bold border border-[#7a1515] cursor-pointer">NEXT</button>
+                    <button
+                      type="button"
+                      onClick={handleCancel}
+                      disabled={isSubmitting}
+                      className="flex-1 py-1.5 border border-[#8c8f94] bg-[#caccce] hover:bg-[#b8babb] text-[11px] font-mono font-bold text-[#222735] cursor-pointer disabled:opacity-50"
+                    >
+                      CANCEL
+                    </button>
+                    <button
+                      type="submit"
+                      disabled={isSubmitting}
+                      className="flex-1 py-1.5 bg-[#1a5c36] hover:bg-[#236b40] text-white text-[11px] font-mono font-bold border border-[#134526] cursor-pointer disabled:opacity-50"
+                    >
+                      {isSubmitting ? 'SAVING...' : 'COMMIT_RECORD'}
+                    </button>
                   </div>
                 </form>
-              )}
-
-              {step === 'SUBTITLE' && (
-                <div className="space-y-4">
-                   <div className="space-y-2 bg-[#caccce] p-2 border border-[#9fa2a8]">
-                    <span className="text-[9px] font-mono font-bold text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// MOVIE SUBTITLE (OPTIONAL)</span>
-                    <SubtitleUpload folderName={folderName} currentUrl={payload.subtitleUrl} currentPublicId={payload.subtitlePublicId} onUpload={(url, id) => updatePayload({ subtitleUrl: url, subtitlePublicId: id })} onRemove={() => updatePayload({ subtitleUrl: null, subtitlePublicId: null })} />
-                  </div>
-                  
-                  <div className="flex gap-2 pt-2 border-t border-[#9fa2a8]">
-                    <button type="button" onClick={() => setStep('FORM')} disabled={isSubmitting} className="flex-1 py-1.5 border border-[#8c8f94] bg-[#caccce] hover:bg-[#b8babb] text-[11px] font-mono font-bold text-[#222735] cursor-pointer disabled:opacity-50">BACK</button>
-                    <button type="button" onClick={finalizeFlow} disabled={isSubmitting} className="flex-1 py-1.5 bg-[#1a5c36] hover:bg-[#236b40] text-white text-[11px] font-mono font-bold border border-[#134526] cursor-pointer disabled:opacity-50">{isSubmitting ? 'SAVING...' : 'COMMIT_RECORD'}</button>
-                  </div>
-                </div>
               )}
 
             </div>

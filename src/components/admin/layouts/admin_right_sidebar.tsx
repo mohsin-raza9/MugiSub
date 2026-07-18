@@ -1,8 +1,8 @@
 'use client'
 
 import AddAnime from "@/components/layouts/add_anime";
-import AddEpisode from "@/components/layouts/add_episode";
 import AddNews from "@/components/layouts/add_news";
+import AddEpisode from "@/components/layouts/AddEpisode";
 import AddSeason from "@/components/layouts/AddSeason";
 import Statusbox from "@/components/layouts/statusbox";
 import { ChevronRight, History } from "lucide-react";

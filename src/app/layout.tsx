@@ -1,6 +1,9 @@
 import type { Metadata } from "next";
 import "./globals.css";
-import LayoutWrapper from "@/components/LayoutWrapper";
+import Sidebar from "@/components/Sidebar";
+import SearchContainer from "@/components/SearchContainer";
+import PathSyncListener from "@/components/PathSyncListener";
+import PageWrapper from "@/components/layouts/home/PageWrapper";
 
 export const metadata: Metadata = {
   title: "Create Next App",
@@ -18,9 +21,20 @@ export default function RootLayout({
       className="h-full antialiased font-sans"
     >
       <body className="min-h-screen w-full m-0 p-0 bg-[#b1b3b5] overflow-x-hidden select-none">
-        <LayoutWrapper>
-          {children}
-        </LayoutWrapper>
+        <PathSyncListener />
+        <header>
+          <SearchContainer />
+        </header>
+        <main className="flex">
+          <aside>
+            <Sidebar />
+          </aside>
+          <section className="w-full min-w-0 pt-2 overflow-x-hidden">
+            <PageWrapper>
+              {children}
+            </PageWrapper>
+          </section>
+        </main>
       </body>
     </html>
   );

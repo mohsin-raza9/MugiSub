@@ -1,9 +1,10 @@
 'use client';
 
 import React, { useState } from 'react';
-import { ArrowRight, LogIn, UserPlus } from 'lucide-react';
+import { ArrowRight } from 'lucide-react';
 import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
+import Link from 'next/link';
 
 type AuthMode = "login" | "register" | "forgot";
 
@@ -83,15 +84,16 @@ const AuthBox = () => {
         <div className="bg-[#bdbfc3] w-full max-w-[380px] rounded-sm border border-[#999] shadow-lg p-5 flex flex-col items-center text-center">
           <h2 className="text-[18px] font-bold text-black mb-2">Verify Your Email</h2>
           <p className="text-[13px] text-black mb-4">
-            We've sent a verification link to <strong className="text-[#a11f1f]">{session.user.email}</strong>. 
+            We've sent a verification link to <strong className="text-[#a11f1f]">{session.user.email}</strong>.
             Please check your inbox (and spam folder) to verify your account.
           </p>
-          <button
-            onClick={() => window.open('mailto:', '_blank')}
+          <Link
+            href="https://mail.google.com/"
+            target="_blank"
             className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-2 px-6 font-bold text-[14px] transition-colors border border-[#2b2f3d]"
           >
             Go to Email
-          </button>
+          </Link>
         </div>
       </div>
     );
@@ -101,7 +103,7 @@ const AuthBox = () => {
     <div className="min-h-[400px] bg-[#bdbfc3] flex items-center justify-center font-sans p-4">
       {/* Main Container */}
       <div className="w-full max-w-[380px] bg-[#bdbfc3] rounded-2xl shadow-lg overflow-hidden border border-[#999]">
-        
+
         {session ? (
           /* Profile / Welcome View if user is already logged in */
           <div className="p-4 flex flex-col gap-3">
@@ -138,18 +140,16 @@ const AuthBox = () => {
               <button
                 type="button"
                 onClick={() => { setMode("login"); setError(""); setSuccessMsg(""); }}
-                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${
-                  mode === "login" || mode === "forgot" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
-                }`}
+                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${mode === "login" || mode === "forgot" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                  }`}
               >
                 Login
               </button>
               <button
                 type="button"
                 onClick={() => { setMode("register"); setError(""); setSuccessMsg(""); }}
-                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${
-                  mode === "register" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
-                }`}
+                className={`flex-1 py-2 text-[15px] font-bold focus:outline-none transition-colors ${mode === "register" ? "bg-[#bdbfc3] text-black" : "bg-[#800] text-[#cfd1d4] hover:bg-[#900]"
+                  }`}
               >
                 Register
               </button>
@@ -168,7 +168,7 @@ const AuthBox = () => {
                     className="w-full bg-[#E8F0FE] border border-[#34394d] px-2 py-2 text-[12px] text-black outline-none focus:border-black"
                   />
                 )}
-                
+
                 <input
                   type="email"
                   placeholder="Email Address"

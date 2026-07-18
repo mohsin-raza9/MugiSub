@@ -1,130 +1,233 @@
 'use client';
 
-import React, { useState } from 'react';
-import { 
-  Edit3, Plus, MessageSquare 
-} from 'lucide-react';
+import React, { useEffect } from 'react';
+import { useRouter } from 'next/navigation';
+import { MessageSquare } from 'lucide-react';
+import { useAnimeStore, AnimeItem } from '@/store/animeStore';
+import clsx from 'clsx';
+
+// ─── Dummy / fallback values ──────────────────────────────────────────────────
+// Agar DB me koi field null ho to yahan se value aayegi
+const DUMMY: Partial<AnimeItem> & {
+  descriptionFallback: string;
+  typeFallback: string;
+  statusFallback: string;
+} = {
+  image: 'https://images.unsplash.com/photo-1578632767115-351597cf2477?w=300&q=80',
+  descriptionFallback: 'No description available yet.',
+  typeFallback: 'Unknown',
+  statusFallback: 'Unknown',
+};
+
+// ─── Small helper ─────────────────────────────────────────────────────────────
+function orDummy<T>(value: T | null | undefined, fallback: T): T {
+  return value !== null && value !== undefined ? value : fallback;
+}
 
 interface Props {
   params: Promise<{ slug: string }>;
 }
 
 export default function AnimeDetailsPage({ params }: Props) {
-  const [slug, setSlug] = React.useState<string>('');
+  const router = useRouter();
+
+  // params se slug
+  const [animeId, setAnimeId] = React.useState<string>('');
 
   React.useEffect(() => {
-    params.then((p) => setSlug(p.slug));
+    params.then((p) => setAnimeId(p.slug));
   }, [params]);
 
-  const animeTitle = slug 
-    ? decodeURIComponent(slug).replace(/-/g, ' ').replace(/\b\w/g, c => c.toUpperCase())
-    : "Kimi ga Shinu made Koi o Shitai";
+  // Store se data + fetch action
+  const fetchAnimes = useAnimeStore((s) => s.fetchAnimes);
+  const isLoading = useAnimeStore((s) => s.isLoading);
+  const hasFetched = useAnimeStore((s) => s.hasFetched);
+  const getAnimeById = useAnimeStore((s) => s.getAnimeById);
+
+  // Agar store abhi tak populated nahi to yahan bhi fetch karo
+  // (user seedha URL pe aaya ho)
+  useEffect(() => {
+    if (!hasFetched) {
+      fetchAnimes();
+    }
+  }, [hasFetched, fetchAnimes]);
+
+  // Ek baar fetch ho jaye aur animeId mil jaye to match karo
+  useEffect(() => {
+    if (!hasFetched || !animeId) return;
+
+    const found = getAnimeById(animeId);
+    if (!found) {
+      // Wrong / non-existent ID → homepage pe wapas
+      router.replace('/');
+    }
+  }, [hasFetched, animeId, getAnimeById, router]);
+
+  // ─── Rendering state ────────────────────────────────────────────────────────
+  if (!animeId || isLoading || !hasFetched) {
+    return <LoadingSkeleton />;
+  }
+
+  const anime = getAnimeById(animeId);
+
+  // Agar anime nahi mila to bhi kuch mat dikhao (redirect fire ho rahi hai)
+  if (!anime) return null;
+
+  // ─── Field values (with fallbacks) ─────────────────────────────────────────
+  const title = orDummy(anime.title, 'Untitled Anime');
+  const description = orDummy(anime.description, DUMMY.descriptionFallback);
+  const type = orDummy(anime.type, DUMMY.typeFallback!);
+  const status = orDummy(anime.status, DUMMY.statusFallback!);
+  const posterImage = orDummy(anime.image, DUMMY.image!);
 
   return (
-    <div className="flex min-h-screen bg-[#d1d5db] m-8 mx-1 font-sans text-[#1f2937]">
-      
-      {/* Main Content - Aur Thoda Neeche Kiya Hai */}
-      <main className="flex-1 p-5 pt-8 overflow-y-auto">   {/* ← Increased top padding */}
-        
-        <div className="bg-[#2d3748] text-white px-4 py-2.5 mb-6 rounded-sm shadow-sm">
-          <h2 className="m-0 text-lg font-semibold">Anime: {animeTitle}</h2>
+    <article className="flex min-h-screen bg-[#d1d5db] my-2 font-sans text-[#1f2937]">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
+
+        {/* ── LEFT COLUMN ── */}
+        <div className="flex flex-col gap-4">
+
+          {/* Poster */}
+          <div className="bg-white border border-[#a1a1aa] aspect-3/4 shadow-sm overflow-hidden">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              src={posterImage}
+              alt={title}
+              className="w-full h-full object-cover"
+            />
+          </div>
+
+          {/* Info box */}
+          <p className='px-5 py-1 bg-[#bdbfc3] -mb-5 w-fit'>Info</p>
+          <div className="p-2 bg-[#bdbfc3]">
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Main Title</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Type</span>
+              <span className='inline-block px-2 py-2 w-3/5'>{type}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Status</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Release Date</span>
+              <span className='inline-block px-2 py-2 w-3/5'>{title}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Episodes</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Rating</span>
+              <span className='inline-block px-2 py-2 w-3/5'>{title}</span>
+            </div>
+            <div className='flex item-center *:text-xs space-y-1'>
+              <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Average</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+            </div>
+          </div>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
-                    <div className="flex flex-col gap-4">
-           
+        {/* ── RIGHT COLUMN ── */}
+        <div className="flex flex-col gap-4">
 
-            <div className="bg-white border border-[#a1a1aa] aspect-[3/4] flex items-center justify-center rounded-sm shadow-sm overflow-hidden group">
-              <span className="text-[#71717a] text-sm group-hover:scale-105 transition-transform duration-200">Anime Poster Image</span>
+          {/* Description */}
+          <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-4 shadow-sm">
+            <p className="text-sm leading-relaxed m-0 mb-2.5 text-gray-700">
+              {description}
+            </p>
+            <div className="italic text-xs text-[#64748b]">
+              {status === 'Finished' ? 'Series Completed' : `Status: ${status}`}
             </div>
+          </div>
 
-            <div className="bg-white border border-[#94a3b8] rounded-sm shadow-sm overflow-hidden">
-              <div className="bg-[#e2e8f0] px-3 py-1.5 text-xs font-bold border-b border-[#94a3b8]">Info</div>
-              <div className="flex flex-col">
-                <div className="flex justify-between px-3 py-2 text-xs border-b border-[#e2e8f0] hover:bg-slate-50">
-                  <span className="font-bold text-[#4b5563]">Main Title</span>
-                  <span>{animeTitle}</span>
-                </div>
-                <div className="flex justify-between px-3 py-2 text-xs border-b border-[#e2e8f0] hover:bg-slate-50">
-                  <span className="font-bold text-[#4b5563]">Type</span>
-                  <span>TV Series</span>
-                </div>
-                <div className="flex justify-between px-3 py-2 text-xs border-b border-[#e2e8f0] hover:bg-slate-50">
-                  <span className="font-bold text-[#4b5563]">Season</span>
-                  <span>Summer 2026</span>
-                </div>
-                <div className="flex justify-between px-3 py-2 text-xs hover:bg-slate-50">
-                  <span className="font-bold text-[#4b5563]">Year</span>
-                  <span>21.06.2026</span>
+          <div className='space-y-5'>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
+              Files 
+            </h3>
+            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
+              <span className="text-[#64748b] italic text-xs">No tags available yet.</span>
+            </div>
+          </div>
+
+
+          {/* Statistics */}
+          <div className='space-y-5'>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
+              Statistics
+            </h3>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <StatCard label="Views" value={String(anime.viewsCount ?? 0)} />
+              <StatCard label="Comments" value={String(anime.popularity ?? 0)} />
+              <StatCard label="Likes" value={String(anime.trendingScore ?? 0)} />
+            </div>
+          </div>
+
+          {/* Discussions placeholder */}
+          <div className='space-y-5'>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
+              Newest Discussions
+            </h3>
+            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
+              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 text-sm">
+                <div className="flex items-center gap-1.5 font-medium text-gray-800">
+                  <MessageSquare size={15} className="text-blue-600" />
+                  <span className="text-[#64748b] italic text-xs">No discussions yet.</span>
                 </div>
               </div>
             </div>
           </div>
 
-          {/* RIGHT COLUMN */}
+          {/* Tags placeholder */}
+          <div className='space-y-5'>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
+              Tags
+            </h3>
+            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
+              <span className="text-[#64748b] italic text-xs">No tags available yet.</span>
+            </div>
+          </div>
+
+          {/* Cast placeholder */}
+          <div className='space-y-5'>
+            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
+              Cast
+            </h3>
+            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
+              <span className="text-[#64748b] italic text-xs">Cast information coming soon.</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </article>
+  );
+}
+
+const StatCard = ({ label, value }: { label: string; value: string }) => {
+  return (
+    <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 text-center shadow-xs">
+      <span className="block text-[11px] font-bold text-[#475569] uppercase">{label}</span>
+      <span className="text-base font-bold text-[#1e3a8a]">{value}</span>
+    </div>
+  );
+}
+
+function LoadingSkeleton() {
+  return (
+    <div className="flex min-h-screen bg-[#d1d5db] m-8 mx-1 font-sans text-[#1f2937] animate-pulse">
+      <main className="flex-1 p-5 pt-8">
+        <div className="h-10 bg-[#2d3748]/40 rounded-sm mb-6 w-1/2" />
+        <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
           <div className="flex flex-col gap-4">
-            <div className="bg-[#f8fafc] border border-[#cbd5e1] p-4 rounded-sm shadow-sm">
-              <p className="text-sm leading-relaxed m-0 mb-2.5 text-gray-700">
-                Death lurks behind a mysterious orphanage where children train to become magical weapons of war. 
-                Among them is Sheena, who longs to stop the fighting and end the conflict. The mysterious girl turns out to be a secret weapon—an immortal child soldier named Mimi.
-              </p>
-              <div className="italic text-xs text-[#64748b]">Source: Kodansha</div>
-            </div>
-
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">Statistics</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <div className="bg-[#e2e8f0] border border-[#cbd5e1] p-3.5 text-center rounded-sm shadow-xs">
-                <span className="block text-[11px] font-bold text-[#475569] uppercase">Score/Rank By</span>
-                <span className="text-base font-bold text-[#1e3a8a]">#9076</span>
-              </div>
-              <div className="bg-[#e2e8f0] border border-[#cbd5e1] p-3.5 text-center rounded-sm shadow-xs">
-                <span className="block text-[11px] font-bold text-[#475569] uppercase">Favourites</span>
-                <span className="text-base font-bold text-[#1e3a8a]">#9119</span>
-              </div>
-              <div className="bg-[#e2e8f0] border border-[#cbd5e1] p-3.5 text-center rounded-sm shadow-xs">
-                <span className="block text-[11px] font-bold text-[#475569] uppercase">Running Time</span>
-                <span className="text-base font-bold text-[#1e3a8a]">approx. 1h 40m</span>
-              </div>
-            </div>
-
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">Newest Discussions</h3>
-            <div className="bg-[#f8fafc] border border-[#cbd5e1] p-3.5 rounded-sm shadow-sm">
-              <div className="flex flex-col sm:flex-row sm:justify-between items-start sm:items-center gap-2 text-sm">
-                <div className="flex items-center gap-1.5 font-medium text-gray-800">
-                  <MessageSquare size={15} className="text-blue-600" /> Comments
-                  <span className="text-[#b91c1c] font-bold ml-1">by dorainam</span>
-                </div>
-                <div className="text-xs text-[#64748b]">Replies: 3 | Views: 201</div>
-              </div>
-            </div>
-
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">Tags</h3>
-            <div className="bg-[#f8fafc] border border-[#cbd5e1] p-3.5 rounded-sm shadow-sm">
-              <div className="flex gap-2 flex-wrap">
-                <span className="bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-1 rounded-md text-xs font-semibold text-blue-800">shoujo ai</span>
-                <span className="bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-1 rounded-md text-xs font-semibold text-blue-800">magic school</span>
-                <span className="bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-1 rounded-md text-xs font-semibold text-blue-800">fantasy</span>
-                <span className="bg-[#eff6ff] border border-[#bfdbfe] px-2.5 py-1 rounded-md text-xs font-semibold text-blue-800">speculative fiction</span>
-              </div>
-            </div>
-
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">Cast</h3>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-              <div className="bg-white border border-[#cbd5e1] p-3 flex gap-3 items-center rounded-sm shadow-xs hover:border-blue-400 transition-colors">
-                <div className="w-10 h-10 bg-[#cbd5e1] rounded-full flex items-center justify-center text-[10px] text-gray-600 shrink-0">Mimi</div>
-                <div>
-                  <div className="font-bold text-sm text-[#1e40af]">Kagari Mimi</div>
-                  <div className="text-[11px] text-[#64748b]">Main Character - Voiced by Hidaka Rina</div>
-                </div>
-              </div>
-              <div className="bg-white border border-[#cbd5e1] p-3 flex gap-3 items-center rounded-sm shadow-xs hover:border-blue-400 transition-colors">
-                <div className="w-10 h-10 bg-[#cbd5e1] rounded-full flex items-center justify-center text-[10px] text-gray-600 shrink-0">Sheena</div>
-                <div>
-                  <div className="font-bold text-sm text-[#1e40af]">Totsuki Sheena</div>
-                  <div className="text-[11px] text-[#64748b]">Main Character - Voiced by Takahashi Rie</div>
-                </div>
-              </div>
-            </div>
+            <div className="aspect-[3/4] bg-gray-400 rounded-sm" />
+            <div className="h-40 bg-gray-300 rounded-sm" />
+          </div>
+          <div className="flex flex-col gap-4">
+            <div className="h-24 bg-gray-300 rounded-sm" />
+            <div className="h-20 bg-gray-300 rounded-sm" />
           </div>
         </div>
       </main>
