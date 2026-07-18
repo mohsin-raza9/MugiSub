@@ -13,12 +13,11 @@ import {
     TrendingUp,
 } from 'lucide-react';
 import AddAnime from '@/components/layouts/add_anime';
-import AddEpisode from '@/components/layouts/add_episode';
+import AddEpisode from '@/components/layouts/AddEpisode';
 import AddSeason from '@/components/layouts/AddSeason';
 import AddNews from '@/components/layouts/add_news';
 import Statusbox from '@/components/layouts/statusbox';
 import { useRouter } from 'next/navigation';
-import AdminTab from '@/components/admin/layouts/admin_tab';
 import AdminRightSidebar from '@/components/admin/layouts/admin_right_sidebar';
 
 // ─── Mock Data ────────────────────────────────────────────────────

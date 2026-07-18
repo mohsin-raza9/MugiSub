@@ -12,13 +12,6 @@ interface TrailerUploadProps {
 
 export default function TrailerUpload(props: TrailerUploadProps) {
   return (
-    <FileUploadZone
-      label="Trailer Video"
-      icon={Film}
-      accept="video/*"
-      showPreview={false}
-      fileType="video"
-      {...props}
-    />
+    <FileUploadZone label="Trailer Video" icon={Film} accept="video/*" showPreview={false} fileType="video" {...props} />
   );
 }

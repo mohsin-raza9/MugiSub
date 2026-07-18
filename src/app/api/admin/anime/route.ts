@@ -1,57 +1,75 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
-import { AnimeType, AnimeStatus } from '@prisma/client';
+import { AnimeType, AnimeStatus, SubtitleFormat } from '@prisma/client';
 
 export async function POST(req: Request) {
   try {
     const payload = await req.json();
 
-    // Map frontend payload types to Prisma enums
     const typeMapping: Record<string, AnimeType> = {
+      tv: 'TV',
+      season: 'TV',
       movie: 'Movie',
-      season: 'Season',
-      drama: 'Daram',
+      ova: 'OVA',
+      ona: 'ONA',
+      special: 'Special',
+      drama: 'Drama',
+      TV: 'TV',
+      Movie: 'Movie',
+      OVA: 'OVA',
+      ONA: 'ONA',
+      Special: 'Special',
+      Drama: 'Drama',
     };
-    
+
     const statusMapping: Record<string, AnimeStatus> = {
+      airing: 'Airing',
+      finished: 'Finished',
+      upcoming: 'Upcoming',
       Airing: 'Airing',
       Finished: 'Finished',
       Upcoming: 'Upcoming',
     };
 
-    const animeType = typeMapping[payload.type];
-    const animeStatus = statusMapping[payload.status];
+    const animeType = payload.type ? typeMapping[String(payload.type).toLowerCase()] || typeMapping[String(payload.type)] : undefined;
+    const animeStatus = payload.status ? statusMapping[String(payload.status).toLowerCase()] || statusMapping[String(payload.status)] : undefined;
 
     if (!animeType || !animeStatus) {
       return NextResponse.json({ error: 'Invalid anime type or status' }, { status: 400 });
     }
 
-    if (!payload.title) {
+    if (!payload.title?.trim()) {
       return NextResponse.json({ error: 'Title is required' }, { status: 400 });
     }
 
-    // Create the main Anime record
     const anime = await prisma.anime.create({
       data: {
-        title: payload.title,
-        description: payload.description || null,
+        title: payload.title.trim(),
+        description: payload.description?.trim() || null,
         type: animeType,
         status: animeStatus,
-        airDate: payload.upcomingDate || null,
         image: payload.imageUrl || null,
-        bannerImage: payload.bannerUrl || null,
-        trailerUrl: payload.trailerUrl || null,
+        episodesCount: payload.episodesCount != null ? Number(payload.episodesCount) : null,
+        releaseDate: payload.releaseDate || payload.upcomingDate ? new Date(payload.releaseDate || payload.upcomingDate) : null,
+        ratingCount: payload.ratingCount != null ? Number(payload.ratingCount) : 0,
+        popularityScore: payload.popularityScore != null ? Number(payload.popularityScore) : 0,
+        trendingScore: payload.trendingScore != null ? Number(payload.trendingScore) : 0,
+        viewsCount: payload.viewsCount != null ? Number(payload.viewsCount) : 0,
+        likesCount: payload.likesCount != null ? Number(payload.likesCount) : 0,
       },
     });
 
-    // If it's a Movie and a subtitle is provided, create the Subtitle record
-    if (payload.type === 'movie' && payload.subtitleUrl) {
+    if (String(payload.type).toLowerCase() === 'movie' && payload.subtitleUrl) {
+      const format = (payload.subtitleFormat as SubtitleFormat) || 'SRT';
       await prisma.subtitle.create({
         data: {
           animeId: anime.id,
           fileUrl: payload.subtitleUrl,
-          language: 'en', // Defaulting to 'en', can be enhanced later to support selection
-          languageName: 'English',
+          language: payload.subtitleLanguage || 'en',
+          languageName: payload.subtitleLanguageName || 'English',
+          format,
+          isVerified: payload.subtitleIsVerified || false,
+          fileSizeKb: payload.subtitleFileSizeKb ?? null,
         },
       });
     }
@@ -68,17 +86,15 @@ export async function GET(req: Request) {
     const url = new URL(req.url);
     const selectOnly = url.searchParams.get('select') === 'true';
 
-    let animeList;
-    if (selectOnly) {
-      animeList = await prisma.anime.findMany({
-        select: { id: true, title: true, type: true },
-        orderBy: { createdAt: 'desc' },
-      });
-    } else {
-      animeList = await prisma.anime.findMany({
-        orderBy: { createdAt: 'desc' },
-      });
-    }
+    const animeList = selectOnly
+      ? await prisma.anime.findMany({
+          select: { id: true, title: true, type: true },
+          orderBy: { createdAt: 'desc' },
+        })
+      : await prisma.anime.findMany({
+          orderBy: { createdAt: 'desc' },
+          include: { tags: { include: { tag: true } } },
+        });
 
     return NextResponse.json(animeList);
   } catch (error) {

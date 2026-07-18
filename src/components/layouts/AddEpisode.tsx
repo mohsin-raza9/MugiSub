@@ -18,6 +18,10 @@ interface EpisodeEntry {
   seasonId: string;
   subtitleUrl: string | null;
   subtitlePublicId: string | null;
+  subtitleLanguage: string;
+  subtitleLanguageName: string;
+  subtitleFormat: string;
+  subtitleIsVerified: boolean;
 }
 
 const emptyEntry: EpisodeEntry = {
@@ -29,6 +33,10 @@ const emptyEntry: EpisodeEntry = {
   seasonId: '',
   subtitleUrl: null,
   subtitlePublicId: null,
+  subtitleLanguage: 'en',
+  subtitleLanguageName: 'English',
+  subtitleFormat: 'SRT',
+  subtitleIsVerified: false,
 };
 
 // ─── Component ───────────────────────────────────────────────────────
@@ -127,11 +135,15 @@ const AddEpisode = () => {
   const handleAddAnother = (e: React.FormEvent) => {
     e.preventDefault();
     setBulkEntries(prev => [...prev, { ...entry }]);
-    // Reset fields except for relations to make data entry faster
+    // Reset fields except for relations and subtitle settings to make data entry faster
     setEntry({
       ...emptyEntry,
       animeId: entry.animeId,
       seasonId: entry.seasonId,
+      subtitleLanguage: entry.subtitleLanguage,
+      subtitleLanguageName: entry.subtitleLanguageName,
+      subtitleFormat: entry.subtitleFormat,
+      subtitleIsVerified: entry.subtitleIsVerified,
       // Automatically increment episode number if possible
       episodeNumber: entry.episodeNumber && !isNaN(Number(entry.episodeNumber)) 
         ? (Number(entry.episodeNumber) + 1).toString() 
@@ -376,7 +388,7 @@ const AddEpisode = () => {
 
                   {/* SUBTITLES Section */}
                   <div className="space-y-2 bg-[#caccce] p-2 border border-[#9fa2a8]">
-                    <span className="text-[10px] font-black tracking-wider text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// MOVIE SUBTITLE (OPTIONAL)</span>
+                    <span className="text-[10px] font-black tracking-wider text-[#2a3243] block border-b border-[#9fa2a8] pb-0.5 mb-1.5">// EPISODE SUBTITLE (OPTIONAL)</span>
                     
                     {!entry.animeId ? (
                       <div className="text-[10px] text-red-600 font-bold mb-2">Please select an Anime first to enable uploads.</div>
@@ -390,6 +402,38 @@ const AddEpisode = () => {
                         onUpload={(url, id) => updateEntry({ subtitleUrl: url, subtitlePublicId: id })}
                         onRemove={() => updateEntry({ subtitleUrl: null, subtitlePublicId: null })}
                       />
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Language Code</label>
+                          <input type="text" value={entry.subtitleLanguage} onChange={e => updateEntry({ subtitleLanguage: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]"
+                            placeholder="en" />
+                        </div>
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Language Name</label>
+                          <input type="text" value={entry.subtitleLanguageName} onChange={e => updateEntry({ subtitleLanguageName: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]"
+                            placeholder="English" />
+                        </div>
+                      </div>
+                      <div className="grid grid-cols-2 gap-3 mt-2">
+                        <div>
+                          <label className="block text-[9px] text-[#222735] font-mono font-bold uppercase mb-0.5">Format</label>
+                          <select value={entry.subtitleFormat} onChange={e => updateEntry({ subtitleFormat: e.target.value })}
+                            className="w-full bg-[#f0f5ff] border border-[#8c8f94] px-2 py-1 text-[11px] text-black outline-none focus:border-[#2a3243]">
+                            <option value="SRT">SRT</option>
+                            <option value="ASS">ASS</option>
+                            <option value="VTT">VTT</option>
+                          </select>
+                        </div>
+                        <div className="flex items-end">
+                          <label className="flex items-center gap-2 text-[10px] text-[#222735] font-mono font-bold uppercase cursor-pointer">
+                            <input type="checkbox" checked={entry.subtitleIsVerified} onChange={e => updateEntry({ subtitleIsVerified: e.target.checked })}
+                              className="h-4 w-4 text-[#1a5c36] focus:ring-[#1a5c36] border-[#8c8f94] rounded" />
+                            Is Verified
+                          </label>
+                        </div>
+                      </div>
                     </div>
                   </div>
 

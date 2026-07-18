@@ -1,6 +1,3 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -8,10 +5,6 @@ generator client {
 datasource db {
   provider = "postgresql"
 }
-
-// ==========================================
-// Better Auth Core Models
-// ==========================================
 
 enum Role {
   User
@@ -21,33 +14,23 @@ enum Role {
 }
 
 model User {
-  id            String    @id @default(uuid())
+  id            String   @id @default(uuid())
   name          String
-  email         String    @unique
+  email         String   @unique
   emailVerified Boolean
   image         String?
-  createdAt     DateTime  @default(now())
-  updatedAt     DateTime  @updatedAt
-  role          Role    @default(User)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+  role          Role     @default(User)
   signature     String?
 
-  // Better Auth Relations
-  sessions      Session[]
-  accounts      Account[]
+  sessions Session[]
+  accounts Account[]
 
-  // MugiSub Relations
   profile           Profile?
-  playlists         Playlist[]
-  mylist            MyListEntry[]
-  favorites         Favorite[]
-  watchHistory      WatchHistory[]
   reviews           Review[]
   newsPosts         NewsPost[]
-  threads           ForumThread[]
-  forumPosts        ForumPost[]
-  editRequests      EditRequest[]
   uploadedSubtitles Subtitle[]
-  notifications     Notification[]
 }
 
 model Session {
@@ -60,21 +43,25 @@ model Session {
   userAgent String?
   userId    String
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
 }
 
 model Account {
-  id                    String    @id @default(uuid())
-  accountId             String
-  providerId            String
-  userId                String
-  user                  User      @relation(fields: [userId], references: [id], onDelete: Cascade)
-  accessToken           String?
-  refreshToken          String?
-  idToken               String?
-  expiresAt             DateTime?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
+  id           String    @id @default(uuid())
+  accountId    String
+  providerId   String
+  userId       String
+  user         User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  accessToken  String?
+  refreshToken String?
+  idToken      String?
+  expiresAt    DateTime?
+  password     String?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+
+  @@index([userId])
 }
 
 model Verification {
@@ -86,12 +73,6 @@ model Verification {
   updatedAt  DateTime? @updatedAt
 }
 
-// ==========================================
-// User Profile Model
-// ==========================================
-// Separate from `User` so the auth-critical table stays lean.
-// Holds everything that makes a "public profile page" possible.
-
 model Profile {
   id                   String   @id @default(uuid())
   userId               String   @unique
@@ -101,25 +82,23 @@ model Profile {
   bannerImage          String?
   country              String?
   pronouns             String?
-  socialLinks          Json?    // { twitter, discord, website, ... }
+  socialLinks          Json?
   animeCompletedCount  Int      @default(0)
   episodesWatchedCount Int      @default(0)
   totalWatchMinutes    Int      @default(0)
   createdAt            DateTime @default(now())
   updatedAt            DateTime @updatedAt
 
-  user         User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  favoriteTags Tag[] @relation("UserFavoriteTags")
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 
-// ==========================================
-// Anime Catalog Models
-// ==========================================
-
 enum AnimeType {
+  TV
   Movie
-  Season
-  Daram
+  OVA
+  ONA
+  Special
+  Drama
 }
 
 enum AnimeStatus {
@@ -129,98 +108,64 @@ enum AnimeStatus {
 }
 
 model Anime {
-  id            String      @id @default(uuid())
-  title         String
-  description   String?
-  type          AnimeType
-  status        AnimeStatus
-  airDate       String?
-  image         String?
-  bannerImage   String?
-  trailerUrl    String?
-  episodesCount Int?
-  rating        Float?
-  ratingCount   Int         @default(0)
-  average       Float?
-  averageCount  Int         @default(0)
-  viewsCount    Int         @default(0)
-  popularity    Int         @default(0) // members who added this to a list
-  trendingScore Float       @default(0) // recomputed periodically (views + recency decay)
-  isFeatured    Boolean     @default(false)
-  createdAt     DateTime    @default(now())
-  updatedAt     DateTime    @updatedAt
+  id              String      @id @default(uuid())
+  title           String
+  description     String?
+  type            AnimeType
+  status          AnimeStatus
+  image           String?
+  episodesCount   Int?
+  releaseDate     DateTime?
+  ratingCount     Int         @default(0)
+  popularityScore Float       @default(0)
+  trendingScore   Float       @default(0)
+  viewsCount      Int         @default(0)
+  likesCount      Int         @default(0)
+  createdAt       DateTime    @default(now())
+  updatedAt       DateTime    @updatedAt
 
-  // Relations
-  studios          AnimeStudio[]
-  episodes         Episode[]
-  characters       AnimeCharacter[]
-  favorites        Favorite[]
-  tags             AnimeTag[]
-  reviews          Review[]
-  collections      AnimeCollection[]
-  playlistItems    PlaylistItem[]
-  newsMentions     NewsAnime[]
-  curatedListItems CuratedListItem[]
-  subtitle          Subtitle[]
-  seasons Season[]
+  episodes   Episode[]
+  characters AnimeCast[]
+  tags       AnimeTag[]
+  subtitle   Subtitle[]
+  seasons    Season[]
+  reviews    Review[]
+  newsAnimes NewsAnime[]
 
   @@index([status])
   @@index([type])
-  @@index([trendingScore])
   @@index([createdAt])
 }
 
 model Season {
-  id      String    @id @default(uuid())
-  animeId String
-  number  Int             
-  title   String?     
-  description String?
-  anime   Anime     @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  id       String    @id @default(uuid())
+  animeId  String
+  number   Int
+  title    String?
+  anime    Anime     @relation(fields: [animeId], references: [id], onDelete: Cascade)
   episodes Episode[]
 
   @@unique([animeId, number])
-}
-
-model Studio {
-  id          String        @id @default(uuid())
-  name        String        @unique
-  description String?
-  image       String?
-  anime       AnimeStudio[]
-}
-
-model AnimeStudio {
-  animeId  String
-  studioId String
-  anime    Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
-  studio   Studio  @relation(fields: [studioId], references: [id], onDelete: Cascade)
-
-  @@id([animeId, studioId])
+  @@index([animeId])
 }
 
 model Episode {
-  id            String          @id @default(uuid())
+  id            String     @id @default(uuid())
   episodeNumber Int
-  title         String?
+  title         String
   description   String?
-  airDate       String?
+  airingDate    String
   animeId       String
   seasonId      String?
-  mylistEntries MyListEntry[]
   subtitles     Subtitle[]
-  watchHistory  WatchHistory[]
 
-  anime         Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
-  season   Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
+  anime  Anime   @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  season Season? @relation(fields: [seasonId], references: [id], onDelete: SetNull)
 
   @@unique([animeId, episodeNumber])
+  @@index([animeId])
+  @@index([seasonId])
 }
-
-// ==========================================
-// Subtitles Models
-// ==========================================
-// The core of "MugiSub": standalone subtitle files per episode,
 
 enum SubtitleFormat {
   SRT
@@ -232,8 +177,8 @@ model Subtitle {
   id           String         @id @default(uuid())
   episodeId    String?
   animeId      String?
-  language     String         // ISO code, e.g. "en", "ur", "ja"
-  languageName String         // "English", "Urdu", "Japanese"
+  language     String
+  languageName String
   format       SubtitleFormat @default(SRT)
   fileUrl      String
   fileSizeKb   Int?
@@ -250,82 +195,41 @@ model Subtitle {
   @@index([episodeId])
   @@index([animeId])
   @@index([language])
+  @@index([uploadedById])
 }
 
-// ==========================================
-// Characters & Staff Models
-// ==========================================
 
 model Character {
-  id          String           @id @default(uuid())
-  name        String
-  gender      String?          // "female", "male", "other"
-  description String?
-  image       String?
-  rating      Float?
-  ratingCount Int              @default(0)
-  trashPercent Float           @default(0.0) // waifu trash rating percentage
-  haremCount  Int              @default(0)
+  id     String  @id @default(uuid())
+  name   String
+  gender String?
+  image  String?
 
-  // Relations
-  anime       AnimeCharacter[]
-  favorites   Favorite[]
-  tags        CharacterTag[]
+  anime AnimeCast[]
+  tags  CharacterTag[]
 }
 
-model AnimeCharacter {
+model AnimeCast {
   animeId     String
   characterId String
-  role        String          // "Main", "Supporting"
-  vaId        String?         // Voice Actor Creator ID
-  anime       Anime           @relation(fields: [animeId], references: [id], onDelete: Cascade)
-  character   Character       @relation(fields: [characterId], references: [id], onDelete: Cascade)
-  voiceActor  Creator?        @relation(fields: [vaId], references: [id])
+  role        String
+  anime       Anime     @relation(fields: [animeId], references: [id], onDelete: Cascade)
+  character   Character @relation(fields: [characterId], references: [id], onDelete: Cascade)
 
   @@id([animeId, characterId])
-}
-
-model Creator {
-  id          String           @id @default(uuid())
-  name        String
-  role        String?          // e.g. "Voice Actor", "Director", "Author"
-  bio         String?
-  image       String?
-
-  voicedCharacters AnimeCharacter[]
-}
-
-// ==========================================
-// Collections & Tags Models
-// ==========================================
-
-
-model Collection {
-  id          String            @id @default(uuid())
-  name        String            @unique
-  description String?
-  anime       AnimeCollection[]
-}
-
-model AnimeCollection {
-  animeId      String
-  collectionId String
-  anime        Anime      @relation(fields: [animeId], references: [id], onDelete: Cascade)
-  collection   Collection @relation(fields: [collectionId], references: [id], onDelete: Cascade)
-
-  @@id([animeId, collectionId])
+  @@index([characterId])
 }
 
 model Tag {
-  id          String         @id @default(uuid())
-  name        String         @unique
-  description String?
-  parentId    String?
-  parent      Tag?           @relation("TagHierarchy", fields: [parentId], references: [id])
-  subtags     Tag[]          @relation("TagHierarchy")
-  anime       AnimeTag[]
-  characters  CharacterTag[]
-  favoritedBy Profile[]      @relation("UserFavoriteTags")
+  id         String         @id @default(uuid())
+  name       String         @unique
+  parentId   String?
+  parent     Tag?           @relation("TagHierarchy", fields: [parentId], references: [id])
+  subtags    Tag[]          @relation("TagHierarchy")
+  anime      AnimeTag[]
+  characters CharacterTag[]
+
+  @@index([parentId])
 }
 
 model AnimeTag {
@@ -335,6 +239,7 @@ model AnimeTag {
   tag     Tag    @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([animeId, tagId])
+  @@index([tagId])
 }
 
 model CharacterTag {
@@ -344,89 +249,7 @@ model CharacterTag {
   tag         Tag       @relation(fields: [tagId], references: [id], onDelete: Cascade)
 
   @@id([characterId, tagId])
-}
-
-// ==========================================
-// Playlists Models
-// ==========================================
-// User-curated, shareable anime collections (different from MyListEntry,
-// which tracks per-episode watch status).
-
-model Playlist {
-  id          String   @id @default(uuid())
-  userId      String
-  title       String
-  description String?
-  coverImage  String?
-  isPublic    Boolean  @default(true)
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
-
-  user  User           @relation(fields: [userId], references: [id], onDelete: Cascade)
-  items PlaylistItem[]
-}
-
-model PlaylistItem {
-  id         String   @id @default(uuid())
-  playlistId String
-  animeId    String
-  note       String?
-  position   Int      @default(0)
-  addedAt    DateTime @default(now())
-
-  playlist Playlist @relation(fields: [playlistId], references: [id], onDelete: Cascade)
-  anime    Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
-
-  @@unique([playlistId, animeId])
-}
-
-// ==========================================
-// Mylist & Personal Activity Models
-// ==========================================
-
-model MyListEntry {
-  id          String   @id @default(uuid())
-  userId      String
-  episodeId   String
-  watchStatus String   // "completed", "watching", "on-hold", "plan-to-watch", "dropped"
-  storageType String?  // "local", "cloud", "external"
-  rating      Int?     // 1 to 10
-  notes       String?
-  updatedAt   DateTime @updatedAt
-
-  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  episode     Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, episodeId])
-}
-
-model WatchHistory {
-  id            String   @id @default(uuid())
-  userId        String
-  episodeId     String
-  progressSec   Int      @default(0)
-  durationSec   Int?
-  isCompleted   Boolean  @default(false)
-  lastWatchedAt DateTime @default(now())
-
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  episode Episode @relation(fields: [episodeId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, episodeId])
-  @@index([userId, lastWatchedAt])
-}
-
-model Favorite {
-  id          String     @id @default(uuid())
-  userId      String
-  animeId     String?
-  characterId String?
-
-  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)
-  anime       Anime?     @relation(fields: [animeId], references: [id], onDelete: Cascade)
-  character   Character? @relation(fields: [characterId], references: [id], onDelete: Cascade)
-
-  @@unique([userId, animeId, characterId])
+  @@index([tagId])
 }
 
 model Review {
@@ -438,13 +261,12 @@ model Review {
   rating    Int
   createdAt DateTime @default(now())
 
-  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
-  anime     Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
-}
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  anime Anime @relation(fields: [animeId], references: [id], onDelete: Cascade)
 
-// ==========================================
-// News & Forums Models
-// ==========================================
+  @@index([userId])
+  @@index([animeId])
+}
 
 enum NewsCategory {
   Announcement
@@ -473,6 +295,7 @@ model NewsPost {
   relatedAnime NewsAnime[]
 
   @@index([isPublished, publishedAt])
+  @@index([authorId])
 }
 
 model NewsAnime {
@@ -483,130 +306,5 @@ model NewsAnime {
   anime    Anime    @relation(fields: [animeId], references: [id], onDelete: Cascade)
 
   @@id([newsPostId, animeId])
-}
-
-model ForumCategory {
-  id          String        @id @default(uuid())
-  title       String        @unique
-  description String?
-  threads     ForumThread[]
-}
-
-model ForumThread {
-  id         String      @id @default(uuid())
-  categoryId String
-  creatorId  String
-  title      String
-  viewsCount Int         @default(0)
-  createdAt  DateTime    @default(now())
-
-  category   ForumCategory @relation(fields: [categoryId], references: [id], onDelete: Cascade)
-  creator    User          @relation(fields: [creatorId], references: [id], onDelete: Cascade)
-  posts      ForumPost[]
-}
-
-model ForumPost {
-  id        String   @id @default(uuid())
-  threadId  String
-  authorId  String
-  content   String
-  parentId  String?
-  createdAt DateTime @default(now())
-
-  thread    ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
-  author    User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
-  parent    ForumPost?  @relation("PostReplies", fields: [parentId], references: [id])
-  replies   ForumPost[] @relation("PostReplies")
-}
-
-// ==========================================
-// Homepage / Curated Lists Models
-// ==========================================
-// Powers editorially-controlled sections like Trending, Popular,
-// Latest Releases, Airing Soon, Editor's Picks, etc.
-// (Dynamic versions of these can also be computed on the fly from
-// Anime.viewsCount / popularity / trendingScore / createdAt / status.)
-
-enum CuratedListType {
-  Trending
-  Popular
-  LatestReleases
-  AiringSoon
-  RecentlyAdded
-  TopRated
-  EditorsPick
-  StaffRecommended
-}
-
-model CuratedList {
-  id        String          @id @default(uuid())
-  type      CuratedListType
-  title     String?
-  updatedAt DateTime        @updatedAt
-  createdAt DateTime        @default(now())
-
-  items CuratedListItem[]
-
-  @@unique([type, title])
-}
-
-model CuratedListItem {
-  id            String      @id @default(uuid())
-  curatedListId String
-  animeId       String
-  position      Int         @default(0)
-  addedAt       DateTime    @default(now())
-
-  curatedList CuratedList @relation(fields: [curatedListId], references: [id], onDelete: Cascade)
-  anime       Anime       @relation(fields: [animeId], references: [id], onDelete: Cascade)
-
-  @@unique([curatedListId, animeId])
-  @@index([curatedListId, position])
-}
-
-// ==========================================
-// Notifications Model
-// ==========================================
-
-enum NotificationType {
-  NewEpisode
-  AnimeStatusChange
-  ForumReply
-  ReviewReply
-  EditRequestUpdate
-  System
-}
-
-model Notification {
-  id        String           @id @default(uuid())
-  userId    String
-  type      NotificationType
-  title     String
-  message   String?
-  link      String?
-  isRead    Boolean          @default(false)
-  createdAt DateTime         @default(now())
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@index([userId, isRead])
-}
-
-// ==========================================
-// Moderation & Edit Workflow Models
-// ==========================================
-
-model EditRequest {
-  id            String   @id @default(uuid())
-  userId        String
-  entityType    String   // "anime", "character", "creator"
-  entityId      String
-  fieldChanged  String
-  originalValue String?
-  proposedValue String?
-  status        String   // "pending", "approved", "rejected"
-  reviewerId    String?
-  createdAt     DateTime @default(now())
-
-  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  @@index([animeId])
 }

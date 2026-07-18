@@ -12,13 +12,6 @@ interface BannerUploadProps {
 
 export default function BannerUpload(props: BannerUploadProps) {
   return (
-    <FileUploadZone
-      label="Banner Image"
-      icon={MonitorPlay}
-      accept="image/*"
-      showPreview={true}
-      fileType="image"
-      {...props}
-    />
+    <FileUploadZone label="Banner Image" icon={MonitorPlay} accept="image/*" showPreview={true} fileType="image" {...props} />
   );
 }
