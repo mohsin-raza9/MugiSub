@@ -154,7 +154,7 @@ model Episode {
   episodeNumber Int
   title         String
   description   String?
-  airingDate    String
+  airingDate    String?
   animeId       String
   seasonId      String?
   subtitles     Subtitle[]

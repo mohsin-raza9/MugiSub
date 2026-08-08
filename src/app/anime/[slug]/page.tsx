@@ -1,9 +1,10 @@
 'use client';
 
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { useAnimeStore, AnimeItem } from '@/store/animeStore';
+import MediaDownloadSection from '@/components/MediaDownloadSection';
 import clsx from 'clsx';
 
 // ─── Dummy / fallback values ──────────────────────────────────────────────────
@@ -31,18 +32,22 @@ interface Props {
 export default function AnimeDetailsPage({ params }: Props) {
   const router = useRouter();
 
-  // params se slug
-  const [animeId, setAnimeId] = React.useState<string>('');
-
-  React.useEffect(() => {
-    params.then((p) => setAnimeId(p.slug));
-  }, [params]);
-
   // Store se data + fetch action
   const fetchAnimes = useAnimeStore((s) => s.fetchAnimes);
   const isLoading = useAnimeStore((s) => s.isLoading);
   const hasFetched = useAnimeStore((s) => s.hasFetched);
   const getAnimeById = useAnimeStore((s) => s.getAnimeById);
+
+  // params se slug
+  const [animeId, setAnimeId] = React.useState<string>('');
+  const [filesData, setFilesData] = React.useState<any>(null);
+  const [filesLoading, setFilesLoading] = React.useState<boolean>(true);
+
+  const anime = getAnimeById(animeId);
+
+  React.useEffect(() => {
+    params.then((p) => setAnimeId(p.slug));
+  }, [params]);
 
   // Agar store abhi tak populated nahi to yahan bhi fetch karo
   // (user seedha URL pe aaya ho)
@@ -63,12 +68,40 @@ export default function AnimeDetailsPage({ params }: Props) {
     }
   }, [hasFetched, animeId, getAnimeById, router]);
 
+  // Fetch actual seasons/episodes/files data from the API
+  useEffect(() => {
+    if (!anime?.id) return;
+
+    let isMounted = true;
+    setFilesLoading(true);
+
+    fetch(`/api/anime/files?animeId=${anime.id}`)
+      .then((res) => {
+        if (!res.ok) throw new Error('Failed to fetch files');
+        return res.json();
+      })
+      .then((data) => {
+        if (isMounted) {
+          setFilesData(data);
+          setFilesLoading(false);
+        }
+      })
+      .catch((err) => {
+        console.error('Error fetching anime files:', err);
+        if (isMounted) {
+          setFilesLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [anime?.id]);
+
   // ─── Rendering state ────────────────────────────────────────────────────────
   if (!animeId || isLoading || !hasFetched) {
     return <LoadingSkeleton />;
   }
-
-  const anime = getAnimeById(animeId);
 
   // Agar anime nahi mila to bhi kuch mat dikhao (redirect fire ho rahi hai)
   if (!anime) return null;
@@ -79,10 +112,14 @@ export default function AnimeDetailsPage({ params }: Props) {
   const type = orDummy(anime.type, DUMMY.typeFallback!);
   const status = orDummy(anime.status, DUMMY.statusFallback!);
   const posterImage = orDummy(anime.image, DUMMY.image!);
+  const releaseDate = anime.releaseDate ? new Date(anime.releaseDate).toLocaleDateString() : 'N/A';
+  const episodesCount = anime.episodesCount !== null && anime.episodesCount !== undefined ? anime.episodesCount.toString() : 'N/A';
+  const rating = anime.rating !== null && anime.rating !== undefined ? anime.rating.toString() : 'N/A';
+  const average = anime.average !== null && anime.average !== undefined ? Number(anime.average).toFixed(1) : 'N/A';
 
   return (
     <article className="flex min-h-screen bg-[#d1d5db] my-2 font-sans text-[#1f2937]">
-      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] gap-5">
+      <div className="grid grid-cols-1 md:grid-cols-[280px_1fr] w-full gap-5">
 
         {/* ── LEFT COLUMN ── */}
         <div className="flex flex-col gap-4">
@@ -110,23 +147,23 @@ export default function AnimeDetailsPage({ params }: Props) {
             </div>
             <div className='flex item-center *:text-xs space-y-1'>
               <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Status</span>
-              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{status}</span>
             </div>
             <div className='flex item-center *:text-xs space-y-1'>
               <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Release Date</span>
-              <span className='inline-block px-2 py-2 w-3/5'>{title}</span>
+              <span className='inline-block px-2 py-2 w-3/5'>{releaseDate}</span>
             </div>
             <div className='flex item-center *:text-xs space-y-1'>
               <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Episodes</span>
-              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{episodesCount}</span>
             </div>
             <div className='flex item-center *:text-xs space-y-1'>
               <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Rating</span>
-              <span className='inline-block px-2 py-2 w-3/5'>{title}</span>
+              <span className='inline-block px-2 py-2 w-3/5'>{rating}</span>
             </div>
             <div className='flex item-center *:text-xs space-y-1'>
               <span className='inline-block bg-[#34394d] text-[#ddd] px-3 py-2 w-2/5'>Average</span>
-              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{title}</span>
+              <span className='inline-block bg-[#cfd1d4] px-2 py-2 w-3/5'>{average}</span>
             </div>
           </div>
         </div>
@@ -135,7 +172,7 @@ export default function AnimeDetailsPage({ params }: Props) {
         <div className="flex flex-col gap-4">
 
           {/* Description */}
-          <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-4 shadow-sm">
+          <div className="bg-[#bdbfc3] border border-[#cbd5e1] w-full p-4 shadow-sm">
             <p className="text-sm leading-relaxed m-0 mb-2.5 text-gray-700">
               {description}
             </p>
@@ -144,14 +181,81 @@ export default function AnimeDetailsPage({ params }: Props) {
             </div>
           </div>
 
-          <div className='space-y-5'>
-            <h3 className="text-sm font-bold text-gray-800 uppercase tracking-wider border-b border-gray-400 pb-1 mt-2">
-              Files 
-            </h3>
-            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
-              <span className="text-[#64748b] italic text-xs">No tags available yet.</span>
+          {filesLoading ? (
+            <div className="space-y-1.5">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="bg-[#bdbfc3] border border-[#a8abb1] shadow-sm overflow-hidden flex items-center justify-between px-4 py-3 animate-pulse">
+                  {/* Left Part */}
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="w-8 h-8 bg-gray-400 rounded-sm shrink-0"></div>
+                    <div className="h-3.5 bg-gray-400 rounded w-1/3"></div>
+                  </div>
+                  {/* Right Part */}
+                  <div className="flex flex-col items-center gap-1 shrink-0">
+                    <div className="w-[100px] h-[28px] bg-gray-400 rounded-sm"></div>
+                    <div className="w-16 h-2 bg-gray-400 rounded mt-1"></div>
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          ) : (filesData && !filesData.error) ? (
+            <MediaDownloadSection
+              contentType={filesData.contentType}
+              {...(filesData.contentType === 'movie' ? {
+                data: {
+                  title: title,
+                  year: anime.releaseDate ? new Date(anime.releaseDate).getFullYear() : undefined,
+                  duration: '2h 2min',
+                  downloadsCount: filesData.data?.subtitles?.reduce((acc: number, sub: any) => acc + (sub.downloads || 0), 0) || 0,
+                  files: (filesData.data?.subtitles || []).map((sub: any) => ({
+                    id: sub.id,
+                    format: sub.format,
+                    fileUrl: sub.fileUrl,
+                    subtitleLang: sub.languageName || sub.language,
+                  }))
+                }
+              } : filesData.contentType === 'drama' ? {
+                episodes: (filesData.episodes || []).map((ep: any) => ({
+                  id: ep.id,
+                  episodeNumber: ep.episodeNumber,
+                  title: ep.title,
+                  airingDate: ep.airingDate,
+                  downloadsCount: ep.subtitles?.reduce((acc: number, sub: any) => acc + (sub.downloads || 0), 0) || 0,
+                  files: (ep.subtitles || []).map((sub: any) => ({
+                    id: sub.id,
+                    format: sub.format,
+                    fileUrl: sub.fileUrl,
+                    subtitleLang: sub.languageName || sub.language,
+                  }))
+                }))
+              } : {
+                seasons: (filesData.seasons || []).map((season: any) => ({
+                  id: season.id,
+                  number: season.number,
+                  title: season.title,
+                  episodes: (season.episodes || []).map((ep: any) => ({
+                    id: ep.id,
+                    episodeNumber: ep.episodeNumber,
+                    title: ep.title,
+                    airingDate: ep.airingDate,
+                    downloadsCount: ep.subtitles?.reduce((acc: number, sub: any) => acc + (sub.downloads || 0), 0) || 0,
+                    files: (ep.subtitles || []).map((sub: any) => ({
+                      id: sub.id,
+                      format: sub.format,
+                      fileUrl: sub.fileUrl,
+                      subtitleLang: sub.languageName || sub.language,
+                    }))
+                  }))
+                }))
+              })}
+            />
+          ) : (
+            <div className="bg-[#bdbfc3] border border-[#cbd5e1] p-3.5 shadow-sm">
+              <span className="text-[#64748b] italic text-xs">
+                No files available yet.
+              </span>
+            </div>
+          )}
 
 
           {/* Statistics */}

@@ -52,7 +52,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
         email,
         password,
       }, {
-        onError: (ctx) => {
+        onError: (ctx: any) => {
           setError(ctx.error.message);
         }
       });
@@ -72,29 +72,29 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       title: "MENU",
       items: [
         { label: "Home", href: "/", icon: Home },
-        { label: "Search", href: "/search", icon: Search },
-        { label: "Season Chart", href: "/season-chart", icon: Calendar },
-        { label: "Schedule", href: "/schedule", icon: Clock },
-        { label: "Random", href: "/random", icon: Shuffle },
+        { label: "Search", href: "/", icon: Search },
+        { label: "Season Chart", href: "/", icon: Calendar },
+        { label: "Schedule", href: "/", icon: Clock },
+        { label: "Random", href: "/", icon: Shuffle },
       ],
     },
     {
       title: "BROWSE",
       items: [
-        { label: "Latest", href: "/latest", icon: Flame },
-        { label: "Anime", href: "/anime", icon: Tv },
-        { label: "Movies", href: "/movies", icon: Film },
-        { label: "TV Shows", href: "/tv-shows", icon: MonitorPlay },
-        { label: "Games", href: "/games", icon: Gamepad2 },
-        { label: "Series", href: "/series", icon: Clapperboard },
-        { label: "Creators", href: "/creators", icon: Users },
-        ...(session ? [{ label: "Admin", href: "/admin", icon: LayoutDashboard }] : []),
+        { label: "Latest", href: "/", icon: Flame },
+        { label: "Anime", href: "/", icon: Tv },
+        { label: "Movies", href: "/", icon: Film },
+        { label: "TV Shows", href: "/", icon: MonitorPlay },
+        { label: "Games", href: "/", icon: Gamepad2 },
+        { label: "Series", href: "/", icon: Clapperboard },
+        { label: "Creators", href: "/", icon: Users },
+        ...(session?.user && ["developer", "superadmin", "admin"].includes(session.user.role?.toLowerCase() || "") ? [{ label: "Admin", href: "/admin", icon: LayoutDashboard }] : []),
       ],
     },
     // {
     //   title: "USER DATA",
     //   items: [
-           
+
     //     { label: "Profile", href: "/user/profile", icon: Users },
     //     { label: "My List", href: "/user/list", icon: List },
     //     { label: "My Favourites", href: "/user/favourites", icon: Star },
@@ -107,19 +107,19 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
     {
       title: "INFO",
       items: [
-        { label: "About Us", href: "/about-us", icon: Info },
-        { label: "Contact Us", href: "/contact-us", icon: Mail },
-        { label: "Privacy Policy", href: "/privacy-policy", icon: ShieldCheck },
-        { label: "Disclaimer", href: "/disclaimer", icon: TriangleAlert },
-        { label: "Terms & Conditions", href: "/terms-and-conditions", icon: FileText },
+        { label: "About Us", href: "/", icon: Info },
+        { label: "Contact Us", href: "/", icon: Mail },
+        { label: "Privacy Policy", href: "/", icon: ShieldCheck },
+        { label: "Disclaimer", href: "/", icon: TriangleAlert },
+        { label: "Terms & Conditions", href: "/", icon: FileText },
       ],
     },
   ];
-
+  
   return (
     <>
       {/* Desktop Sidebar: remains exactly as-is */}
-      <div className="hidden lg:block w-[125px] h-[680px] mt-8.5 bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] text-[11px] font-sans text-[#1a2536] shrink-0 leading-tight static top-0">
+      <div className="hidden lg:block w-31.25 h-170 mt-8.5 bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] text-[11px] font-sans text-[#1a2536] shrink-0 leading-tight static top-0">
         {sections
           .filter((section) => {
             if (
@@ -133,7 +133,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           })
           .map((section) => (
             <div key={section.title}>
-              <div className="bg-[#2e384d] w-full max-w-[150px] text-[#ddd] font-bold uppercase tracking-wide px-2 py-[5px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
+              <div className="bg-[#2e384d] w-full max-w-37.5 text-[#ddd] font-bold uppercase tracking-wide px-2 py-1.25 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
                 {section.title}
               </div>
               <ul className="flex flex-col m-0 py-2 text-[12px] shadow-[0_1px_3px_0_rgba(0,0,0,0.2)] text-black list-none ">
@@ -154,7 +154,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           {session ? (
             /* User Profile Logged-in View */
             <>
-              <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-2 py-[5px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
+              <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-2 py-1.25 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
                 LOGGED IN
               </div>
               <div className="bg-[#bdbfc3] w-full p-2 flex flex-col gap-1 text-[11px] text-black">
@@ -164,7 +164,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <button
                   type="button"
                   onClick={handleLogout}
-                  className="w-full h-6 mt-2 bg-[#800] hover:bg-[#a00] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-[11px]"
+                  className="w-full h-6 mt-2 bg-[#800] hover:bg-[#a00] text-white py-0.75 flex items-center justify-center gap-1.5 transition-colors font-bold text-[11px]"
                 >
                   <LogOut size={14} color="#ffffff" className="shrink-0" />
                   <span>Logout</span>
@@ -174,7 +174,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           ) : (
             /* Standard Login Form Form View */
             <form onSubmit={handleSidebarLogin}>
-              <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-2 py-[5px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
+              <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-2 py-1.25 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635]">
                 REGISTER/LOGIN
               </div>
               <div className="bg-[#bdbfc3] w-full p-2 flex flex-col gap-1.5">
@@ -196,7 +196,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     value={email}
                     onChange={(e) => setEmail(e.target.value)}
                     required
-                    className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
+                    className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-0.5 text-[11px] text-black outline-none focus:border-[#555]"
                   />
                   <input
                     type="password"
@@ -204,12 +204,12 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
                     required
-                    className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-[2px] text-[11px] text-black outline-none focus:border-[#555]"
+                    className="w-full bg-[#f0f5ff] border border-[#999999] px-1 py-0.5 text-[11px] text-black outline-none focus:border-[#555]"
                   />
                 </div>
 
                 {error && (
-                  <div className="text-red-700 text-[9px] font-bold bg-red-100 p-1 border border-red-300 max-w-full break-words">
+                  <div className="text-red-700 text-[9px] font-bold bg-red-100 p-1 border border-red-300 max-w-full wrap-break-word">
                     {error}
                   </div>
                 )}
@@ -229,7 +229,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="w-full bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-xs disabled:opacity-50"
+                  className="w-full bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-0.75 flex items-center justify-center gap-1.5 transition-colors font-bold text-xs disabled:opacity-50"
                 >
                   <ArrowRight size={12} color="#ffffff" className="shrink-0" />
                   <span>{loading ? "..." : "Login"}</span>
@@ -241,8 +241,8 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
       </div>
 
       {/* Mobile Drawer (visible only on mobile lg:hidden) */}
-      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-[260px] bg-[#bdbfc3] shadow-2xl transition-transform duration-300 transform ${isOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col font-sans text-[#1a2536]`}>
-        <div className="flex items-center justify-between bg-[#2e384d] text-[#ddd] px-3 py-[7px] border-b border-[#1f2635]">
+      <div className={`lg:hidden fixed inset-y-0 left-0 z-50 w-65 bg-[#bdbfc3] shadow-2xl transition-transform duration-300 transform ${isOpen ? "translate-x-0" : "-translate-x-full"} flex flex-col font-sans text-[#1a2536]`}>
+        <div className="flex items-center justify-between bg-[#2e384d] text-[#ddd] px-3 py-1.75 border-b border-[#1f2635]">
           <span className="font-bold uppercase tracking-wide text-[12px]">Navigation</span>
           <button onClick={onClose} className="text-[#ddd] hover:text-white p-1" aria-label="Close menu">
             <X size={18} />
@@ -263,7 +263,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
             })
             .map((section) => (
               <div key={section.title}>
-                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-[7px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
+                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-1.75 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
                   {section.title}
                 </div>
                 <ul className="flex flex-col m-0 py-2 text-[12px] shadow-[0_1px_3px_0_rgba(0,0,0,0.2)] text-black list-none">
@@ -283,7 +283,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
           <div>
             {session ? (
               <>
-                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-[7px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
+                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-1.75 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
                   LOGGED IN
                 </div>
                 <div className="bg-[#bdbfc3] w-full p-3 flex flex-col gap-1.5 text-[11px] text-black">
@@ -293,7 +293,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   <button
                     type="button"
                     onClick={() => { handleLogout(); onClose?.(); }}
-                    className="w-full h-8 mt-2 bg-[#800] hover:bg-[#a00] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-[11px]"
+                    className="w-full h-8 mt-2 bg-[#800] hover:bg-[#a00] text-white py-0.75 flex items-center justify-center gap-1.5 transition-colors font-bold text-[11px]"
                   >
                     <LogOut size={14} color="#ffffff" className="shrink-0" />
                     <span>Logout</span>
@@ -302,7 +302,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
               </>
             ) : (
               <form onSubmit={(e) => { handleSidebarLogin(e); onClose?.(); }}>
-                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-[7px] border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
+                <div className="bg-[#2e384d] w-full text-[#ddd] font-bold uppercase tracking-wide px-3 py-1.75 border-b shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] border-[#1f2635] text-[11px]">
                   REGISTER OR LOGIN
                 </div>
                 <div className="bg-[#bdbfc3] w-full p-3 flex flex-col gap-2">
@@ -335,7 +335,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   </div>
 
                   {error && (
-                    <div className="text-red-700 text-[10px] font-bold bg-red-100 p-1.5 border border-red-300 max-w-full break-words">
+                    <div className="text-red-700 text-[10px] font-bold bg-red-100 p-1.5 border border-red-300 max-w-full wrap-break-word">
                       {error}
                     </div>
                   )}
@@ -353,7 +353,7 @@ export default function Sidebar({ isOpen = false, onClose }: SidebarProps) {
                   <button
                     type="submit"
                     disabled={loading}
-                    className="w-full h-8 bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[3px] flex items-center justify-center gap-1.5 transition-colors font-bold text-xs disabled:opacity-50"
+                    className="w-full h-8 bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-0.75 flex items-center justify-center gap-1.5 transition-colors font-bold text-xs disabled:opacity-50"
                   >
                     <ArrowRight size={12} color="#ffffff" className="shrink-0" />
                     <span>{loading ? "..." : "Login"}</span>

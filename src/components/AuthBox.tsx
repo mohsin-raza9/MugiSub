@@ -81,28 +81,28 @@ const AuthBox = () => {
   if (session?.user && !session.user.emailVerified) {
     return (
       <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 font-sans">
-        <div className="bg-[#bdbfc3] w-full max-w-[380px] rounded-sm border border-[#999] shadow-lg p-5 flex flex-col items-center text-center">
+        <div className="bg-[#bdbfc3] w-full max-w-95 rounded-sm border border-[#999] shadow-lg p-5 flex flex-col items-center text-center">
           <h2 className="text-[18px] font-bold text-black mb-2">Verify Your Email</h2>
           <p className="text-[13px] text-black mb-4">
             We've sent a verification link to <strong className="text-[#a11f1f]">{session.user.email}</strong>.
             Please check your inbox (and spam folder) to verify your account.
           </p>
-          <Link
+          <a
             href="https://mail.google.com/"
             target="_blank"
             className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-2 px-6 font-bold text-[14px] transition-colors border border-[#2b2f3d]"
           >
             Go to Email
-          </Link>
+          </a>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-[400px] bg-[#bdbfc3] flex items-center justify-center font-sans p-4">
+    <div className="min-h-100 bg-[#bdbfc3] flex items-center justify-center font-sans p-4">
       {/* Main Container */}
-      <div className="w-full max-w-[380px] bg-[#bdbfc3] rounded-2xl shadow-lg overflow-hidden border border-[#999]">
+      <div className="w-full max-w-95 bg-[#bdbfc3] rounded-2xl shadow-lg overflow-hidden border border-[#999]">
 
         {session ? (
           /* Profile / Welcome View if user is already logged in */
@@ -119,14 +119,14 @@ const AuthBox = () => {
               <button
                 type="button"
                 onClick={() => router.push("/")}
-                className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-[5px] px-4 font-bold text-[12px] transition-colors border border-[#2b2f3d]"
+                className="bg-[#2b2f3d] hover:bg-[#3d4357] text-white py-1.25 px-4 font-bold text-[12px] transition-colors border border-[#2b2f3d]"
               >
                 Go to Main Page
               </button>
               <button
                 type="button"
                 onClick={handleLogout}
-                className="bg-[#800] hover:bg-[#a00] text-white py-[5px] px-4 font-bold text-[12px] transition-colors border border-[#800]"
+                className="bg-[#800] hover:bg-[#a00] text-white py-1.25 px-4 font-bold text-[12px] transition-colors border border-[#800]"
               >
                 Log Out
               </button>

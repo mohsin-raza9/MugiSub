@@ -16,7 +16,7 @@ export const PAGE_CONFIG_MAP: PageConfigMap = {
             { name: 'Dashboard', path: '/admin', isActive: true },
             { name: 'Anime', path: '/admin/anime', isActive: false },
             { name: 'User', path: '/admin/users', isActive: false },
-            { name: 'Terminal', path: '/admin/terminal', isActive: false },
+            { name: 'Terminal', path: '/admin', isActive: false },
         ],
     },
     '/admin/anime': {
@@ -25,7 +25,7 @@ export const PAGE_CONFIG_MAP: PageConfigMap = {
             { name: 'Dashboard', path: '/admin', isActive: false },
             { name: 'Anime', path: '/admin/anime', isActive: true },
             { name: 'User', path: '/admin/users', isActive: false },
-            { name: 'Terminal', path: '/admin/terminal', isActive: false },
+            { name: 'Terminal', path: '/admin', isActive: false },
         ],
     },
     '/admin/users': {
@@ -34,7 +34,7 @@ export const PAGE_CONFIG_MAP: PageConfigMap = {
             { name: 'Dashboard', path: '/admin', isActive: false },
             { name: 'Anime', path: '/admin/anime', isActive: false },
             { name: 'User', path: '/admin/users', isActive: true },
-            { name: 'Terminal', path: '/admin/terminal', isActive: false },
+            { name: 'Terminal', path: '/admin', isActive: false },
         ],
     },
     '/admin/terminal': {
@@ -43,7 +43,7 @@ export const PAGE_CONFIG_MAP: PageConfigMap = {
             { name: 'Dashboard', path: '/admin', isActive: false },
             { name: 'Anime', path: '/admin/anime', isActive: false },
             { name: 'User', path: '/admin/users', isActive: false },
-            { name: 'Terminal', path: '/admin/terminal', isActive: true },
+            { name: 'Terminal', path: '/admin', isActive: true },
         ],
     },
 };
