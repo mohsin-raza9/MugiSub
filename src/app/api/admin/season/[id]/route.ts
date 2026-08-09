@@ -1,9 +1,9 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const { id } = await params;
     const season = await prisma.season.findUnique({
       where: { id },
       include: {
@@ -22,10 +22,11 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const { id } = await params;
-    const payload = await req.json();
+    const { id } = await context.params;
+    const payload = await request.json();
 
     const updateData: any = {};
     if (payload.title !== undefined) updateData.title = payload.title?.trim() || null;
@@ -49,9 +50,10 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(request: NextRequest, context: { params: Promise<{ id: string }> }) {
+  const { id } = await context.params;
   try {
-    const { id } = await params;
+    const { id } = await context.params;
     await prisma.season.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {

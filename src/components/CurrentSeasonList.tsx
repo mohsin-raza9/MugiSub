@@ -80,22 +80,17 @@ export default function CurrentSeasonList() {
                   <div className="text-[11px]">
                     <span>{anime.type}</span>
                   </div>
-                  {anime.studios && anime.studios.length > 0 && (
-                    <div>
-                      <a href="#" className="text-[#1f5da1] text-[12px] hover:underline font-sans">{anime.studios[0].studio.name}</a>
-                    </div>
-                  )}
                   {(anime.rating || anime.average) && (
                     <div className="space-y-0.5 text-black text-[12px]">
                       {anime.rating && <div>Rating: {anime.rating} ({anime.ratingCount})</div>}
                       {anime.average && <div>Average: {anime.average} ({anime.averageCount})</div>}
                     </div>
                   )}
-                  {anime.tags && anime.tags.length > 0 && (
+                  {/* {anime.tags && anime.tags.length > 0 && (
                     <div className="pt-1">
                       <a href="#" className="text-[#1f5da1] text-[12px] hover:underline font-semibold font-sans">{anime.tags[0].tag.name}</a>
                     </div>
-                  )}
+                  )} */}
                 </div>
               </div>
             ))
