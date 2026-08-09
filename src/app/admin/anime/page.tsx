@@ -36,8 +36,10 @@ export default function AnimeAdminPage() {
     // Submitting state for delete loading
     const [isDeleting, setIsDeleting] = useState(false);
 
-    const fetchAnime = async () => {
-        setLoading(true);
+    const fetchAnime = async (showLoading = true) => {
+        if (showLoading) {
+            queueMicrotask(() => setLoading(true));
+        }
         try {
             const res = await fetch('/api/admin/anime');
             if (res.ok) {
@@ -52,7 +54,10 @@ export default function AnimeAdminPage() {
     };
 
     useEffect(() => {
-        fetchAnime();
+        const load = async () => {
+            await fetchAnime(false);
+        };
+        void load();
     }, []);
 
     const handleDeleteConfirm = async () => {

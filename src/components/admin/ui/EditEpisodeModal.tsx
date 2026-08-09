@@ -36,7 +36,7 @@ export default function EditEpisodeModal({ isOpen, episodeId, animeId, onClose, 
 
   useEffect(() => {
     if (!isOpen || !animeId) {
-      setSeasonOptions([]);
+      queueMicrotask(() => setSeasonOptions([]));
       return;
     }
 

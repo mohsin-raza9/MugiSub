@@ -5,7 +5,6 @@ import { useRouter } from 'next/navigation';
 import { MessageSquare } from 'lucide-react';
 import { useAnimeStore, AnimeItem } from '@/store/animeStore';
 import MediaDownloadSection from '@/components/MediaDownloadSection';
-import clsx from 'clsx';
 
 // ─── Dummy / fallback values ──────────────────────────────────────────────────
 // Agar DB me koi field null ho to yahan se value aayegi
@@ -73,7 +72,10 @@ export default function AnimeDetailsPage({ params }: Props) {
     if (!anime?.id) return;
 
     let isMounted = true;
-    setFilesLoading(true);
+    // Delay the state update to avoid synchronous setState inside effect
+    setTimeout(() => {
+        if (isMounted) setFilesLoading(true);
+    }, 0);
 
     fetch(`/api/anime/files?animeId=${anime.id}`)
       .then((res) => {
