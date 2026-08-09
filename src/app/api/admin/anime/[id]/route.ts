@@ -1,10 +1,13 @@
-import { NextResponse } from 'next/server';
+import { NextResponse, NextRequest } from 'next/server';
 import { prisma } from '@/lib/prisma';
 import { AnimeType, AnimeStatus } from '@prisma/client';
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   try {
-    const { id } = await params;
     const anime = await prisma.anime.findUnique({
       where: { id },
       include: {
@@ -24,19 +27,37 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
   }
 }
 
-export async function PATCH(req: Request, { params }: { params: { id: string } }) {
+export async function PATCH(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   try {
-    const { id } = await params;
-    const payload = await req.json();
+    const payload = await request.json();
 
     const typeMapping: Record<string, AnimeType> = {
-      tv: 'TV', season: 'TV', movie: 'Movie', ova: 'OVA', ona: 'ONA', special: 'Special', drama: 'Drama',
-      TV: 'TV', Movie: 'Movie', OVA: 'OVA', ONA: 'ONA', Special: 'Special', Drama: 'Drama',
+      tv: 'TV',
+      season: 'TV',
+      movie: 'Movie',
+      ova: 'OVA',
+      ona: 'ONA',
+      special: 'Special',
+      drama: 'Drama',
+      TV: 'TV',
+      Movie: 'Movie',
+      OVA: 'OVA',
+      ONA: 'ONA',
+      Special: 'Special',
+      Drama: 'Drama',
     };
 
     const statusMapping: Record<string, AnimeStatus> = {
-      airing: 'Airing', finished: 'Finished', upcoming: 'Upcoming',
-      Airing: 'Airing', Finished: 'Finished', Upcoming: 'Upcoming',
+      airing: 'Airing',
+      finished: 'Finished',
+      upcoming: 'Upcoming',
+      Airing: 'Airing',
+      Finished: 'Finished',
+      Upcoming: 'Upcoming',
     };
 
     const updateData: any = {};
@@ -46,7 +67,15 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
     if (payload.status) updateData.status = statusMapping[String(payload.status).toLowerCase()] || statusMapping[String(payload.status)];
     if (payload.imageUrl !== undefined) updateData.image = payload.imageUrl || null;
     if (payload.episodesCount !== undefined) updateData.episodesCount = payload.episodesCount != null ? Number(payload.episodesCount) : null;
-    if (payload.releaseDate || payload.upcomingDate) updateData.releaseDate = new Date(payload.releaseDate || payload.upcomingDate);
+    if (payload.releaseDate !== undefined || payload.upcomingDate !== undefined) {
+      const date = payload.releaseDate || payload.upcomingDate;
+      updateData.releaseDate = date ? new Date(date) : null;
+    }
+    if (payload.ratingCount !== undefined) updateData.ratingCount = Number(payload.ratingCount) || 0;
+    if (payload.popularityScore !== undefined) updateData.popularityScore = Number(payload.popularityScore) || 0;
+    if (payload.trendingScore !== undefined) updateData.trendingScore = Number(payload.trendingScore) || 0;
+    if (payload.viewsCount !== undefined) updateData.viewsCount = Number(payload.viewsCount) || 0;
+    if (payload.likesCount !== undefined) updateData.likesCount = Number(payload.likesCount) || 0;
 
     const anime = await prisma.anime.update({
       where: { id },
@@ -60,9 +89,12 @@ export async function PATCH(req: Request, { params }: { params: { id: string } }
   }
 }
 
-export async function DELETE(req: Request, { params }: { params: { id: string } }) {
+export async function DELETE(
+  request: NextRequest,
+  { params }: { params: Promise<{ id: string }> }
+) {
+  const { id } = await params;
   try {
-    const { id } = await params;
     await prisma.anime.delete({ where: { id } });
     return NextResponse.json({ success: true });
   } catch (error) {

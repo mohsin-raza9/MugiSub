@@ -11,9 +11,9 @@ function buildSubtitleData(payload: Record<string, unknown>, episodeId: string, 
     language: (payload.subtitleLanguage as string) || 'en',
     languageName: (payload.subtitleLanguageName as string) || 'English',
     format: ((payload.subtitleFormat as SubtitleFormat) || 'SRT') as SubtitleFormat,
-    isVerified: payload.subtitleIsVerified || false,
+    isVerified: Boolean(payload.subtitleIsVerified),
     fileSizeKb: payload.subtitleFileSizeKb != null ? Number(payload.subtitleFileSizeKb) : null,
-  };
+  };;
 }
 
 export async function POST(req: Request) {
@@ -32,6 +32,7 @@ export async function POST(req: Request) {
           seasonId: payload.seasonId || null,
           title: payload.title?.trim() || null,
           description: payload.description?.trim() || null,
+          airingDate: payload.airingDate || payload.airDate || null,
         },
       });
 
