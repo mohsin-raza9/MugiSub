@@ -14,11 +14,9 @@ interface SubtitleUploadProps {
 const SubtitleUpload: React.FC<SubtitleUploadProps> = ({ folderName, currentUrl, currentPublicId, onUpload, onRemove }) => {
   const inputRef = useRef<HTMLInputElement>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isDragActive, setIsDragActive] = useState(false);
 
-  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-
+  const uploadFile = async (file: File) => {
     setIsUploading(true);
     try {
       if (currentPublicId) {
@@ -33,6 +31,43 @@ const SubtitleUpload: React.FC<SubtitleUploadProps> = ({ folderName, currentUrl,
     } finally {
       setIsUploading(false);
       if (inputRef.current) inputRef.current.value = '';
+    }
+  };
+
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    await uploadFile(file);
+  };
+
+  const handleDragOver = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(true);
+  };
+
+  const handleDragLeave = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+  };
+
+  const handleDrop = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsDragActive(false);
+
+    const file = e.dataTransfer.files?.[0];
+    if (file) {
+      // Basic check for subtitle files by extension
+      const validExtensions = ['.srt', '.ass', '.vtt', '.sub', '.ssa'];
+      const fileExtension = file.name.substring(file.name.lastIndexOf('.')).toLowerCase();
+      
+      if (validExtensions.includes(fileExtension) || file.type.includes('text/') || file.type === '') {
+        await uploadFile(file);
+      } else {
+        alert('Invalid file format. Please upload a subtitle file (.srt, .ass, .vtt, etc.)');
+      }
     }
   };
 
@@ -61,8 +96,17 @@ const SubtitleUpload: React.FC<SubtitleUploadProps> = ({ folderName, currentUrl,
           </button>
         </div>
       ) : (
-        <button type="button" onClick={() => inputRef.current?.click()} disabled={isUploading}
-          className="w-full h-16 flex flex-col items-center justify-center border border-dashed border-[#8c8f94] bg-[#e5e7eb] hover:bg-[#d1d3d7] text-[#555] cursor-pointer transition-colors disabled:opacity-60">
+        <div
+          onClick={() => !isUploading && inputRef.current?.click()}
+          onDragOver={handleDragOver}
+          onDragLeave={handleDragLeave}
+          onDrop={handleDrop}
+          className={`w-full h-16 flex flex-col items-center justify-center border border-dashed rounded-sm text-[#555] cursor-pointer transition-all duration-150 ${
+            isDragActive 
+              ? 'border-blue-600 bg-blue-50/10' 
+              : 'border-[#8c8f94] bg-[#e5e7eb] hover:bg-[#d1d3d7]'
+          } ${isUploading ? 'opacity-60 pointer-events-none' : ''}`}
+        >
           {isUploading ? (
             <Loader2 size={16} className="animate-spin" />
           ) : (
@@ -71,7 +115,7 @@ const SubtitleUpload: React.FC<SubtitleUploadProps> = ({ folderName, currentUrl,
               <span className="text-[8px] font-mono font-bold">UPLOAD SUBTITLE</span>
             </>
           )}
-        </button>
+        </div>
       )}
     </div>
   );

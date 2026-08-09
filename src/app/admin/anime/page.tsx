@@ -1,366 +1,356 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
-import {
-    Tv,
-    BookOpen,
-    Users,
-    Zap,
-    History,
-    Loader2,
-    CheckCircle2,
-    ChevronRight,
-    TrendingUp,
-} from 'lucide-react';
-import AddAnime from '@/components/layouts/add_anime';
-import AddEpisode from '@/components/layouts/AddEpisode';
-import AddSeason from '@/components/layouts/AddSeason';
-import AddNews from '@/components/layouts/add_news';
-import Statusbox from '@/components/layouts/statusbox';
-import { useRouter } from 'next/navigation';
-import AdminRightSidebar from '@/components/admin/layouts/admin_right_sidebar';
+import React, { useState, useEffect } from 'react';
+import { ChevronDown, ChevronRight, Edit, Trash2, Film, Video, Clapperboard, LayoutList, Loader2 } from 'lucide-react';
+import ConfirmModal from '@/components/admin/ui/ConfirmModal';
+import EditAnimeModal from '@/components/admin/ui/EditAnimeModal';
+import EditSeasonModal from '@/components/admin/ui/EditSeasonModal';
+import EditEpisodeModal from '@/components/admin/ui/EditEpisodeModal';
 
-// ─── Mock Data ────────────────────────────────────────────────────
-const INITIAL_ANIME = [
-    { id: 'AN-992', title: 'Solo Leveling Vol. 2', type: 'TV Series', status: 'SYNCED' },
-    { id: 'AN-881', title: 'Bleach: TYBW Part 3', type: 'TV Series', status: 'INDEXING' },
-    { id: 'AN-102', title: 'Demon Slayer: Hashira Training', type: 'TV Series', status: 'SYNCED' },
-    { id: 'AN-103', title: 'Jujutsu Kaisen Season 2', type: 'TV Series', status: 'SYNCED' },
-];
+type Episode = { id: string, episodeNumber: number, title: string, description: string };
+type Season = { id: string, number: number, title: string, episodes: Episode[] };
+type Anime = { id: string, title: string, type: string, status: string, seasons: Season[], episodes: Episode[] };
 
-const INITIAL_NOVELS = [
-    { id: 'LN-042', title: 'Overlord: The Holy Kingdom', author: 'Kugane Maruyama', status: 'SYNCED' },
-    { id: 'LN-011', title: 'Re:Zero Arc 8', author: 'Tappei Nagatsuki', status: 'SYNCED' },
-    { id: 'LN-105', title: 'Classroom of the Elite Vol. 11', author: 'Shogo Kinugasa', status: 'SYNCED' },
-];
+export default function AnimeAdminPage() {
+    const [animeList, setAnimeList] = useState<Anime[]>([]);
+    const [loading, setLoading] = useState(true);
 
-const PENDING_APPROVALS = [
-    { type: 'EP_RECAP', contributor: 'U_Nightcore' },
-    { type: 'SUB_FILE', contributor: 'Fansub_Prime' },
-    { type: 'BANNER_ART', contributor: 'K_Illustrator' },
-    { type: 'METADATA', contributor: 'Bot_Scraper_3' },
-];
+    // Confirm modal state
+    const [confirmOpen, setConfirmOpen] = useState(false);
+    const [confirmConfig, setConfirmConfig] = useState<{
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        confirmText?: string;
+    } | null>(null);
 
-// ─── Helpers ──────────────────────────────────────────────────────
-const statusBadge = (s: string) =>
-    s === 'SYNCED'
-        ? 'inline-block bg-[#1a4731] text-[#4ade80] border border-[#2d6a4a] text-[9px] font-bold px-1.5 py-0.5 uppercase'
-        : 'inline-block bg-[#3b1c1c] text-[#f87171] border border-[#6b2c2c] text-[9px] font-bold px-1.5 py-0.5 uppercase';
+    // Edit modal states
+    const [editAnimeOpen, setEditAnimeOpen] = useState(false);
+    const [editAnimeId, setEditAnimeId] = useState<string | null>(null);
+    const [editSeasonOpen, setEditSeasonOpen] = useState(false);
+    const [editSeasonId, setEditSeasonId] = useState<string | null>(null);
+    const [editEpisodeOpen, setEditEpisodeOpen] = useState(false);
+    const [editEpisodeId, setEditEpisodeId] = useState<string | null>(null);
+    const [editEpisodeAnimeId, setEditEpisodeAnimeId] = useState<string | null>(null);
 
-// Section header — matches sidebar section headers exactly
-const SH = ({ t }: { t: string }) => (
-    <div className="bg-[#2e384d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
-        {t}
-    </div>
-);
+    // Submitting state for delete loading
+    const [isDeleting, setIsDeleting] = useState(false);
 
-export default function Page() {
-    const [activeTab, setActiveTab] = useState<'DATABASE' | 'TERMINAL' | 'USERS' | 'Anime'>('DATABASE');
-
-    const [animeList, setAnimeList] = useState(INITIAL_ANIME);
-    const [novelsList, setNovelsList] = useState(INITIAL_NOVELS);
-    const [releaseCount, setReleaseCount] = useState(412);
-    // Logs
-    const [logs, setLogs] = useState<string[]>([
-        "[18:22:01] SYSTEM   : MugiSub Admin initialized.",
-        "[18:22:05] DB_PROC  : Kysely connected to Neon PostgreSQL.",
-        "[18:22:15] AUTH     : Super Admin session started.",
-        "[18:22:45] SYNC_EVT : Metadata synced for Solo Leveling Vol. 2.",
-        "[18:23:01] STATUS   : All nodes OPERATIONAL.",
-    ]);
-
-    const addLog = (msg: string) => {
-        const t = new Date().toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        setLogs(prev => [...prev, `[${t}] ${msg}`]);
-    };
-
-    // Modals
-    const [isAddAnime, setIsAddAnime] = useState(false);
-    const [isAddNovel, setIsAddNovel] = useState(false);
-
-    // Forms States (Extended for DB Schema)
-    const [animeTitle, setAnimeTitle] = useState('');
-    const [titleEnglish, setTitleEnglish] = useState('');
-    const [titleJapanese, setTitleJapanese] = useState('');
-    const [animeType, setAnimeType] = useState('TV');
-    const [animeStatus, setAnimeStatus] = useState('Upcoming');
-    const [isFeatured, setIsFeatured] = useState(false);
-    const [airDate, setAirDate] = useState('');
-    const [nextEpisodeAt, setNextEpisodeAt] = useState('');
-    const [imageUrl, setImageUrl] = useState('');
-    const [bannerUrl, setBannerUrl] = useState('');
-    // Validation Error State
-    const [formErrors, setFormErrors] = useState<string[]>([]);
-
-    // Image Upload Refs & States
-    const posterInputRef = useRef<HTMLInputElement>(null);
-    const bannerInputRef = useRef<HTMLInputElement>(null);
-    const [posterName, setPosterName] = useState('');
-    const [bannerName, setBannerName] = useState('');
-
-    // Novel Form States
-    const [novelTitle, setNovelTitle] = useState('');
-    const [novelAuthor, setNovelAuthor] = useState('');
-
-    // Sync
-    const [isSyncing, setIsSyncing] = useState(false);
-    const [syncProgress, setSyncProgress] = useState(0);
-    const [syncLogs, setSyncLogs] = useState<string[]>([]);
-    const [syncSuccess, setSyncSuccess] = useState(false);
-
-    const triggerSync = () => {
-        setIsSyncing(true); setSyncProgress(0); setSyncSuccess(false);
-        setSyncLogs(["Initialising core...", "Verifying DB schema..."]);
-        addLog("ADMIN    : Manual SYSTEM_SYNC triggered.");
+    const fetchAnime = async () => {
+        setLoading(true);
+        try {
+            const res = await fetch('/api/admin/anime');
+            if (res.ok) {
+                const data = await res.json();
+                setAnimeList(data);
+            }
+        } catch (error) {
+            console.error('Failed to fetch anime list:', error);
+        } finally {
+            setLoading(false);
+        }
     };
 
     useEffect(() => {
-        let iv: NodeJS.Timeout;
-        if (isSyncing) {
-            iv = setInterval(() => {
-                setSyncProgress(prev => {
-                    if (prev >= 100) {
-                        clearInterval(iv);
-                        setIsSyncing(false);
-                        setSyncSuccess(true);
-                        addLog("SYSTEM   : Sync COMPLETED — all nodes OK.");
-                        return 100;
-                    }
-                    const n = Math.min(prev + Math.floor(Math.random() * 20) + 10, 100);
-                    if (n > 30 && n <= 60) setSyncLogs(p => p.length < 3 ? [...p, "[DB] Cache flushed... OK"] : p);
-                    if (n > 60 && n <= 85) setSyncLogs(p => p.length < 4 ? [...p, "[CDN] Edge nodes refreshed... OK"] : p);
-                    if (n > 85 && n < 100) setSyncLogs(p => p.length < 5 ? [...p, "[META] Hashes verified... OK"] : p);
-                    return n;
-                });
-            }, 380);
-        }
-        return () => clearInterval(iv);
-    }, [isSyncing]);
+        fetchAnime();
+    }, []);
 
-    // Unified API Dynamic Post Handler
-    // Unified API Dynamic Post Handler with Multi-Field Validation
-    const handleAddAnime = async (e: React.FormEvent) => {
-        e.preventDefault();
-
-        // Clear previous errors
-        const errors: string[] = [];
-
-        // 1. Language & Titles Validation
-        if (!animeTitle.trim()) errors.push("Romaji Title is strictly required.");
-
-        // 2. Format Type Validation
-        const validFormats = ['TV', 'Movie', 'OVA', 'ONA', 'Web', 'Special'];
-        if (!validFormats.includes(animeType)) {
-            errors.push("Invalid Format Type selected.");
-        }
-
-        // 3. Airing Status Validation
-        const validStatuses = ['Upcoming', 'Airing', 'Finished', 'Hiatus'];
-        if (!validStatuses.includes(animeStatus)) {
-            errors.push("Invalid Airing Status selected.");
-        }
-
-        // 4. Air Date String Validation
-        if (animeStatus === 'Upcoming' && !airDate.trim()) {
-            errors.push("Air Date String is required when status is 'Upcoming'.");
-        }
-
-        // 5. Next Episode Countdown Validation
-        if (animeStatus === 'Airing' && !nextEpisodeAt) {
-            errors.push("Next Episode Countdown timestamp is required for live Airing anime.");
-        }
-
-        // 6. Poster & Banner Media Validation
-        if (!imageUrl) {
-            errors.push("Poster Image is mandatory. Please drag or upload a file.");
-        }
-        // Banner configuration check for Featured Slider content
-        if (isFeatured && !bannerUrl) {
-            errors.push("Featured (Slider) content requires a high-res Banner Image.");
-        }
-
-        // If validation fails, abort pipeline and show logs
-        if (errors.length > 0) {
-            setFormErrors(errors);
-            if (typeof addLog === 'function') addLog(`VAL_WARN  : Form validation rejected with ${errors.length} errors.`);
-            return;
-        }
-
-        // Clear validation box if clean
-        setFormErrors([]);
-
-        const tempId = `AN-${Math.floor(100 + Math.random() * 900)}`;
-        const payload = {
-            titleRomaji: animeTitle,
-            titleEnglish: titleEnglish || null,
-            titleJapanese: titleJapanese || null,
-            type: animeType,
-            status: animeStatus,
-            isFeatured,
-            airDate: airDate || null,
-            nextEpisodeAt: nextEpisodeAt ? new Date(nextEpisodeAt).toISOString() : null,
-            image: imageUrl || null,
-            bannerImage: bannerUrl || null,
-        };
-
-        try {
-            if (typeof addLog === 'function') addLog(`DB_WRITE : Committing record "${animeTitle}" to database...`);
-
-            console.log(payload)
-
-            // Reset Form fields and Dropzones
-            setAnimeTitle(''); setTitleEnglish(''); setTitleJapanese(''); setAirDate(''); setNextEpisodeAt(''); setImageUrl(''); setBannerUrl(''); setPosterName(''); setBannerName(''); setIsAddAnime(false);
-        } catch (error) {
-            if (typeof addLog === 'function') addLog(`DB_ERR   : Pipeline failed to write entry.`);
-            console.error(error);
+    const handleDeleteConfirm = async () => {
+        if (confirmConfig?.onConfirm) {
+            setIsDeleting(true);
+            try {
+                await confirmConfig.onConfirm();
+            } finally {
+                setIsDeleting(false);
+                setConfirmOpen(false);
+                setConfirmConfig(null);
+            }
         }
     };
 
-
-    const handleAddNovel = (e: React.FormEvent) => {
-        e.preventDefault();
-        const id = `LN-${Math.floor(100 + Math.random() * 900)}`;
-        setNovelsList(p => [{ id, title: novelTitle, author: novelAuthor, status: 'SYNCED' }, ...p]);
-        addLog(`ADMIN    : Added Novel "${novelTitle}" by ${novelAuthor} (${id})`);
-        setNovelTitle(''); setNovelAuthor(''); setIsAddNovel(false);
+    const deleteAnime = (id: string) => {
+        const targetAnime = animeList.find(a => a.id === id);
+        setConfirmConfig({
+            title: 'DELETE ANIME',
+            message: `Are you sure you want to delete "${targetAnime?.title || 'this anime'}"? This action cannot be undone and will also delete all seasons, episodes, and subtitles.`,
+            confirmText: 'DELETE ANIME',
+            onConfirm: async () => {
+                const res = await fetch(`/api/admin/anime/${id}`, { method: 'DELETE' });
+                if (res.ok) fetchAnime();
+                else alert('Failed to delete anime');
+            },
+        });
+        setConfirmOpen(true);
     };
 
+    const deleteSeason = (id: string) => {
+        setConfirmConfig({
+            title: 'DELETE SEASON',
+            message: 'Are you sure you want to delete this season? All episodes in this season will be unlinked.',
+            confirmText: 'DELETE SEASON',
+            onConfirm: async () => {
+                const res = await fetch(`/api/admin/season/${id}`, { method: 'DELETE' });
+                if (res.ok) fetchAnime();
+                else alert('Failed to delete season');
+            },
+        });
+        setConfirmOpen(true);
+    };
 
+    const deleteEpisode = (id: string) => {
+        setConfirmConfig({
+            title: 'DELETE EPISODE',
+            message: 'Are you sure you want to delete this episode? This will also delete all associated subtitles.',
+            confirmText: 'DELETE EPISODE',
+            onConfirm: async () => {
+                const res = await fetch(`/api/admin/episode/${id}`, { method: 'DELETE' });
+                if (res.ok) fetchAnime();
+                else alert('Failed to delete episode');
+            },
+        });
+        setConfirmOpen(true);
+    };
 
-    // ─── Sidebar command button — matches site's button style ─────
-    const CmdBtn = ({
-        label, onClick, variant = 'default', icon: Icon,
-    }: {
-        label: string; onClick: () => void;
-        variant?: 'red' | 'navy' | 'green' | 'gold' | 'default';
-        icon: React.ElementType;
-    }) => {
-        const styles: Record<string, string> = {
-            red: 'bg-[#a11f1f] hover:bg-[#c02222] text-white border-[#7a1515]',
-            navy: 'bg-[#1f3e70] hover:bg-[#254d8c] text-white border-[#15305a]',
-            green: 'bg-[#1a5c36] hover:bg-[#236b40] text-white border-[#134526]',
-            gold: 'bg-[#5c4a1a] hover:bg-[#6e5a20] text-white border-[#42360f]',
-            default: 'bg-[#34394d] hover:bg-[#12151f] text-white border-[#1c2331]',
-        };
+    // ----- Render Components -----
+    const EpisodeRow = ({ episode, animeId }: { episode: Episode; animeId: string }) => (
+        <div className="flex items-center justify-between py-2 px-4 bg-[#bdbfc3] border border-[#999] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] hover:bg-[#2c3446] transition-colors ml-12 rounded-sm m-2 border-l-2 group">
+            <div className="flex items-center gap-3">
+                <Video size={16} className="text-gray-400" />
+                <span className="text-sm text-[#3b4358] group-hover:text-gray-100">
+                    Episode {episode.episodeNumber} {episode.title ? `- ${episode.title}` : ''}
+                </span>
+            </div>
+            <div className="flex gap-1">
+                <button
+                    onClick={() => {
+                        setEditEpisodeId(episode.id);
+                        setEditEpisodeAnimeId(animeId);
+                        setEditEpisodeOpen(true);
+                    }}
+                    className="p-1.5 hover:bg-blue-600/30 text-blue-600 rounded transition-colors cursor-pointer"
+                    title="Edit Episode"
+                >
+                    <Edit size={13} />
+                </button>
+                <button
+                    onClick={() => deleteEpisode(episode.id)}
+                    className="p-1.5 hover:bg-red-600/30 text-red-600 rounded transition-colors cursor-pointer"
+                    title="Delete Episode"
+                >
+                    <Trash2 size={13} />
+                </button>
+            </div>
+        </div>
+    );
+
+    const SeasonRow = ({ season, animeId }: { season: Season; animeId: string }) => {
+        const [expanded, setExpanded] = useState(false);
         return (
-            <button
-                onClick={onClick}
-                className={`w-full flex items-center justify-between px-2 py-[5px] border text-[11px] font-bold uppercase tracking-wide transition-colors cursor-pointer shadow-[0_1px_2px_rgba(0,0,0,0.3)] ${styles[variant]}`}
-            >
-                <span>{label}</span>
-                <Icon size={13} />
-            </button>
+            <div className="flex flex-col ml-6 m-2">
+                <div
+                    className="flex items-center justify-between py-2 px-4 bg-[#bdbfc3] border border-[#999] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] hover:bg-[#343d52] transition-colors cursor-pointer rounded-sm group"
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    <div className="flex items-center gap-3">
+                        {expanded ? <ChevronDown size={18} className="text-gray-400" /> : <ChevronRight size={18} className="text-gray-400" />}
+                        <LayoutList size={16} className="text-purple-950/40" />
+                        <span className="text-sm font-semibold text-[#3b4358] group-hover:text-gray-100">
+                            Season {season.number} {season.title ? `- ${season.title}` : ''}
+                        </span>
+                        <span className="text-xs bg-purple-950/40 text-purple-300 px-2 py-0.5 rounded-full font-mono">
+                            {season.episodes?.length || 0} eps
+                        </span>
+                    </div>
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => {
+                                setEditSeasonId(season.id);
+                                setEditSeasonOpen(true);
+                            }}
+                            className="p-1.5 hover:bg-blue-600/30 text-blue-600 rounded transition-colors cursor-pointer"
+                            title="Edit Season"
+                        >
+                            <Edit size={13} />
+                        </button>
+                        <button
+                            onClick={() => deleteSeason(season.id)}
+                            className="p-1.5 hover:bg-red-600/30 text-red-600 rounded transition-colors cursor-pointer"
+                            title="Delete Season"
+                        >
+                            <Trash2 size={13} />
+                        </button>
+                    </div>
+                </div>
+                {expanded && (
+                    <div className="mt-1">
+                        {season.episodes?.map(ep => <EpisodeRow key={ep.id} episode={ep} animeId={animeId} />)}
+                        {(!season.episodes || season.episodes.length === 0) && (
+                            <div className="ml-12 text-xs text-gray-500 py-3 italic">No episodes in this season yet.</div>
+                        )}
+                    </div>
+                )}
+            </div>
         );
     };
 
-    const handleFileChange = (file: File, type: 'poster' | 'banner') => {
-        if (!file) return;
+    const AnimeRow = ({ anime }: { anime: Anime }) => {
+        const [expanded, setExpanded] = useState(false);
+        const hasChildren = anime.type === 'TV' || anime.type === 'Drama' || (anime.seasons?.length > 0) || (anime.episodes?.length > 0);
+        const isMovie = anime.type === 'Movie';
 
-        // Generates a local browser URL that can be used directly in <img> src
-        const generatedUrl = URL.createObjectURL(file);
-
-        if (type === 'poster') {
-            setImageUrl(generatedUrl);
-            setPosterName(file.name);
-            if (typeof addLog === 'function') addLog(`FS_LOAD  : Poster loaded locally -> ${file.name}`);
-        } else {
-            setBannerUrl(generatedUrl);
-            setBannerName(file.name);
-            if (typeof addLog === 'function') addLog(`FS_LOAD  : Banner loaded locally -> ${file.name}`);
-        }
-    };
-
-    return (
-        <div className="w-full min-w-0 pt-2 overflow-x-hidden">
-
-            {/* ── Tab Navigation — identical to Main/Forum/Outbox style ── */}
-            <AdminTab />
-
-            {/* ── Main content container — matches page.tsx's content div ─ */}
-            <div className="w-full min-w-0 p-3 lg:p-4 lg:ml-2 bg-[#cfd1d4] text-[#1a2536] font-sans flex flex-col gap-3 shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-hidden">
-
-                {/* ── Page title banner — matches "MAIN" banner on home page ─ */}
-                <div className="bg-[#34394d] text-[#ddd] p-3 py-1.5 border border-[#1c2331] font-bold text-[15px] uppercase tracking-wide shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
-                    Admin Panel
-                </div>
-
-                {/* ── Layout: content + right sidebar ──────────────────────── */}
-                <div className="flex gap-3">
-
-                    {/* ════ LEFT CONTENT ════════════════════════════════════ */}
-                    <div className="flex-1 min-w-0 space-y-3">
-
-                        <div className="space-y-3">
-                            {/* Anime Index */}
-                            <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
-                                <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
-                                    <span>Anime Index</span>
-                                    <button onClick={() => setIsAddAnime(true)}
-                                        className="bg-[#a11f1f] hover:bg-[#c02222] text-white text-[9px] font-bold px-2 py-0.5 border border-[#7a1515] cursor-pointer uppercase">
-                                        + Add
-                                    </button>
-                                </div>
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">ID</th>
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Title</th>
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Type</th>
-                                            <th className="px-2 py-1.5 text-center">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {animeList.map((a, i) => (
-                                            <tr key={a.id}
-                                                className={`text-[11.5px] border-b border-[#999]/40 hover:bg-white/30 transition-colors ${i % 2 === 0 ? 'bg-[#bdbfc3]' : 'bg-[#cfd1d4]'}`}>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30 font-mono font-bold text-[#1f3e70]">{a.id}</td>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30">{a.title}</td>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30 text-[10px] text-[#555]">{a.type}</td>
-                                                <td className="px-2 py-1.5 text-center"><span className={statusBadge(a.status)}>{a.status}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
-                            </div>
-
-                            {/* Novels Index */}
-                            <div className="border border-[#999] bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] overflow-x-auto">
-                                <div className="text-black py-1.5 px-3 font-bold text-[13px] flex items-center justify-between border-b border-[#999]">
-                                    <span>Novels Index</span>
-                                    <button onClick={() => setIsAddNovel(true)}
-                                        className="bg-[#1f3e70] hover:bg-[#254d8c] text-white text-[9px] font-bold px-2 py-0.5 border border-[#15305a] cursor-pointer uppercase">
-                                        + Add
-                                    </button>
-                                </div>
-                                <table className="w-full border-collapse">
-                                    <thead>
-                                        <tr className="bg-[#34394d] text-white text-[11px] font-bold uppercase tracking-wider">
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">ID</th>
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Title</th>
-                                            <th className="px-2 py-1.5 text-left border-r border-[#1c2331]">Author</th>
-                                            <th className="px-2 py-1.5 text-center">Status</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {novelsList.map((n, i) => (
-                                            <tr key={n.id}
-                                                className={`text-[11.5px] border-b border-[#999]/40 hover:bg-white/30 transition-colors ${i % 2 === 0 ? 'bg-[#bdbfc3]' : 'bg-[#cfd1d4]'}`}>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30 font-mono font-bold text-[#1f3e70]">{n.id}</td>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30">{n.title}</td>
-                                                <td className="px-2 py-1.5 border-r border-[#999]/30 text-[10px] text-[#555]">{n.author}</td>
-                                                <td className="px-2 py-1.5 text-center"><span className={statusBadge(n.status)}>{n.status}</span></td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+        return (
+            <div className="flex flex-col mb-2">
+                <div
+                    className={`flex items-center justify-between py-3 px-4 bg-[#bdbfc3] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)] hover:bg-[#9fa2a8] border-l-4 cursor-pointer transition-colors rounded-sm ${
+                        anime.status === 'Airing'
+                            ? 'border-[#009135]'
+                            : anime.status === 'Upcoming'
+                            ? 'border-[#0149a0]'
+                            : 'border-[#626d7d]'
+                    }`}
+                    onClick={() => setExpanded(!expanded)}
+                >
+                    <div className="flex items-center gap-4">
+                        {isMovie ? (
+                            <Clapperboard size={20} className="text-purple-400 shrink-0" />
+                        ) : hasChildren ? (
+                            expanded ? (
+                                <ChevronDown size={20} className="text-gray-400 shrink-0" />
+                            ) : (
+                                <ChevronRight size={20} className="text-gray-400 shrink-0" />
+                            )
+                        ) : (
+                            <Film size={20} className="text-gray-500 shrink-0" />
+                        )}
+                        <div>
+                            <h3 className="text-sm font-bold text-[#3b4358]">{anime.title}</h3>
+                            <div className="flex items-center gap-2 mt-1">
+                                <span className="text-[10px] uppercase font-bold bg-[#3b4358] px-1.5 py-0.5 rounded text-gray-300 border border-[#4b5368]">
+                                    {anime.type}
+                                </span>
+                                <span className={`text-[10px] font-bold px-1.5 py-0.5 uppercase border rounded ${
+                                    anime.status === 'Airing'
+                                        ? 'text-[#009135] border-[#009135]/30 bg-[#009135]/10'
+                                        : anime.status === 'Upcoming'
+                                        ? 'text-[#0149a0] border-[#0149a0]/30 bg-[#0149a0]/10'
+                                        : 'text-[#626d7d] border-[#626d7d]/30 bg-[#626d7d]/10'
+                                }`}>
+                                    {anime.status}
+                                </span>
+                                {!isMovie && (
+                                    <span className="text-[10px] font-mono text-gray-400 bg-[#3b4358] px-1.5 py-0.5 rounded">
+                                        {(anime.seasons?.length || 0) + (anime.episodes?.length || 0)} items
+                                    </span>
+                                )}
                             </div>
                         </div>
                     </div>
-
-                    {/* ════ RIGHT SIDEBAR ════════════════════════════════════ */}
-                    <AdminRightSidebar />
+                    <div className="flex gap-1" onClick={e => e.stopPropagation()}>
+                        <button
+                            onClick={() => {
+                                setEditAnimeId(anime.id);
+                                setEditAnimeOpen(true);
+                            }}
+                            className="p-2 hover:bg-blue-600/20 text-blue-600 rounded transition-colors cursor-pointer"
+                            title="Edit Anime"
+                        >
+                            <Edit size={15} />
+                        </button>
+                        <button
+                            onClick={() => deleteAnime(anime.id)}
+                            className="p-2 hover:bg-red-600/20 text-red-600 rounded transition-colors cursor-pointer"
+                            title="Delete Anime"
+                        >
+                            <Trash2 size={15} />
+                        </button>
+                    </div>
                 </div>
+
+                {expanded && !isMovie && (
+                    <div className="bg-[#bdbfc3] border border-[#999] rounded-b-md">
+                        {anime.seasons?.map(s => <SeasonRow key={s.id} season={s} animeId={anime.id} />)}
+                        {anime.episodes?.map(ep => <EpisodeRow key={ep.id} episode={ep} animeId={anime.id} />)}
+                        {anime.seasons?.length === 0 && anime.episodes?.length === 0 && (
+                            <div className="text-xs text-gray-500 p-6 text-center border border-dashed border-gray-700 rounded-sm italic">
+                                No seasons or episodes yet. Use the commands in the sidebar to add some!
+                            </div>
+                        )}
+                    </div>
+                )}
             </div>
+        );
+    };
+
+    return (
+        <div className="flex flex-col h-[calc(100vh-60px)] mt-5">
+            <div className="flex-1 overflow-y-auto" style={{ scrollbarWidth: 'thin', scrollbarColor: '#2e384d #1a202c' }}>
+                {loading ? (
+                    <div className="flex items-center justify-center h-40">
+                        <Loader2 size={24} className="text-gray-500 animate-spin" />
+                        <span className="ml-3 text-gray-400 text-sm tracking-widest uppercase">Loading Database...</span>
+                    </div>
+                ) : (
+                    <div className="space-y-2">
+                        {animeList.map(anime => <AnimeRow key={anime.id} anime={anime} />)}
+                        {animeList.length === 0 && (
+                            <div className="text-center py-12 text-gray-500 text-sm border-2 border-dashed border-gray-700 rounded-sm mx-auto max-w-md bg-[#1f2635]/50">
+                                <Film size={32} className="mx-auto mb-3 opacity-40" />
+                                <p className="font-mono text-xs uppercase tracking-wider">No Anime found in database</p>
+                                <p className="text-[10px] mt-2 opacity-70">Use the ADD_ANIME button to create your first entry</p>
+                            </div>
+                        )}
+                    </div>
+                )}
+            </div>
+
+            {/* Modals */}
+            <ConfirmModal
+                isOpen={confirmOpen}
+                title={confirmConfig?.title || ''}
+                message={confirmConfig?.message || ''}
+                confirmText={confirmConfig?.confirmText || 'Confirm'}
+                onConfirm={handleDeleteConfirm}
+                onCancel={() => {
+                    if (!isDeleting) {
+                        setConfirmOpen(false);
+                        setConfirmConfig(null);
+                    }
+                }}
+                isLoading={isDeleting}
+            />
+
+            <EditAnimeModal
+                isOpen={editAnimeOpen}
+                animeId={editAnimeId}
+                onClose={() => {
+                    setEditAnimeOpen(false);
+                    setEditAnimeId(null);
+                }}
+                onSaved={fetchAnime}
+            />
+
+            <EditSeasonModal
+                isOpen={editSeasonOpen}
+                seasonId={editSeasonId}
+                onClose={() => {
+                    setEditSeasonOpen(false);
+                    setEditSeasonId(null);
+                }}
+                onSaved={fetchAnime}
+            />
+
+            <EditEpisodeModal
+                isOpen={editEpisodeOpen}
+                episodeId={editEpisodeId}
+                animeId={editEpisodeAnimeId}
+                onClose={() => {
+                    setEditEpisodeOpen(false);
+                    setEditEpisodeId(null);
+                    setEditEpisodeAnimeId(null);
+                }}
+                onSaved={fetchAnime}
+            />
+
         </div>
     );
 }

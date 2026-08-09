@@ -3,7 +3,6 @@
 import { useState, useEffect, Fragment } from "react";
 import AuthBox from "@/components/AuthBox";
 import LoginAndRegister from "@/components/Intro-login-register";
-import Link from "next/link";
 import News from "@/components/News";
 import CurrentSeasonList from "@/components/CurrentSeasonList";
 import AnimeColumnList from "@/components/AnimeColumnList";

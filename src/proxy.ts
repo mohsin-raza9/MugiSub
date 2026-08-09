@@ -30,7 +30,7 @@ export async function proxy(request: NextRequest) {
 
         // Role-based access control
         const role = sessionData.user.role || "User";
-        const adminRoles = ["Developer", "Super Admin", "Admin", "Partner"];
+        const adminRoles = ["Developer", "SuperAdmin", "Admin", "Partner"];
 
         if (!adminRoles.includes(role)) {
             // User does not have access to admin routes

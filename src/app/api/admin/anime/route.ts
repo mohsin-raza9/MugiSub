@@ -93,7 +93,11 @@ export async function GET(req: Request) {
         })
       : await prisma.anime.findMany({
           orderBy: { createdAt: 'desc' },
-          include: { tags: { include: { tag: true } } },
+          include: { 
+            tags: { include: { tag: true } },
+            seasons: { include: { episodes: true }, orderBy: { number: 'asc' } },
+            episodes: { where: { seasonId: null }, orderBy: { episodeNumber: 'asc' } }
+          },
         });
 
     return NextResponse.json(animeList);

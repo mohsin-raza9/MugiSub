@@ -13,12 +13,12 @@ export default async function OnboardingPage() {
 
   const role = session.user.role || "User";
 
-  const adminRoles = ["Developer", "Super Admin", "Admin", "Partner"];
+  const adminRoles = ["Developer", "SuperAdmin", "Admin", "Partner"];
 
   if (adminRoles.includes(role)) {
     redirect("/admin");
   } else {
-    // If standard "User" or any other role, go to home or user dashboard
+    // If standard "User" or any other role, go to hxome or user dashboard
     redirect("/");
   }
 }
