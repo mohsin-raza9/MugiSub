@@ -95,7 +95,7 @@ const AddEpisode = () => {
         .then(data => setSeasonList(data))
         .catch(err => console.error("Failed to fetch seasons", err));
     } else {
-      setSeasonList([]);
+      queueMicrotask(() => setSeasonList([]));
     }
   }, [entry.animeId]);
 

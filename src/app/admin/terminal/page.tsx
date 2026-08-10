@@ -1,7 +1,7 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
-import { RotateCcw, Database, User, Film, Video, Trash2, Plus, X } from 'lucide-react';
+import React, { useState } from 'react';
+import { RotateCcw, Database, User, Film, Video, Trash2 } from 'lucide-react';
 
 const SH = ({ t }: { t: string }) => (
     <div className="bg-[#2e384d] text-[#ddd] font-bold uppercase tracking-wide px-3 py-[5px] text-[11px] border-b border-[#1f2635] shadow-[0_1px_3px_0_rgba(0,0,0,0.4)]">
@@ -16,37 +16,41 @@ interface LogEntry {
     color: string;
 }
 
+const DEFAULT_COLORS: Record<string, string> = {
+    SYSTEM: 'text-[#e2e8f0]',
+    DB: 'text-[#4ade80]',
+    ADMIN: 'text-[#60a5fa]',
+    ANIME: 'text-[#f472b6]',
+    EPISODE: 'text-[#a78bfa]',
+    USER: 'text-[#fbbf24]',
+    WARN: 'text-[#f87171]',
+    ERROR: 'text-[#ef4444]',
+};
+
+const makeLogEntry = (category: string, message: string, color?: string): LogEntry => {
+    const now = new Date();
+    return {
+        time: now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' }),
+        category,
+        message,
+        color: color || DEFAULT_COLORS[category] || 'text-[#94a3b8]',
+    };
+};
+
+const getInitialLogs = (): LogEntry[] => [
+    makeLogEntry('SYSTEM', 'MugiSub Admin Terminal initialized.'),
+    makeLogEntry('DB', 'Database connection pool established.'),
+    makeLogEntry('ADMIN', 'Session authenticated — Admin Panel active.'),
+    makeLogEntry('SYSTEM', 'All systems operational. Waiting for commands...'),
+];
+
 export default function AdminTerminalPage() {
-    const [logs, setLogs] = useState<LogEntry[]>([]);
+    const [logs, setLogs] = useState<LogEntry[]>(getInitialLogs);
     const [filter, setFilter] = useState<string>('ALL');
 
     const addLog = (category: string, message: string, color?: string) => {
-        const now = new Date();
-        const time = now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
-        const defaultColors: Record<string, string> = {
-            SYSTEM: 'text-[#e2e8f0]',
-            DB: 'text-[#4ade80]',
-            ADMIN: 'text-[#60a5fa]',
-            ANIME: 'text-[#f472b6]',
-            EPISODE: 'text-[#a78bfa]',
-            USER: 'text-[#fbbf24]',
-            WARN: 'text-[#f87171]',
-            ERROR: 'text-[#ef4444]',
-        };
-        setLogs(prev => [{
-            time,
-            category,
-            message,
-            color: color || defaultColors[category] || 'text-[#94a3b8]',
-        }, ...prev]);
+        setLogs(prev => [makeLogEntry(category, message, color), ...prev]);
     };
-
-    useEffect(() => {
-        addLog('SYSTEM', 'MugiSub Admin Terminal initialized.');
-        addLog('DB', 'Database connection pool established.');
-        addLog('ADMIN', 'Session authenticated — Admin Panel active.');
-        addLog('SYSTEM', 'All systems operational. Waiting for commands...');
-    }, []);
 
     const categories = ['ALL', 'SYSTEM', 'DB', 'ADMIN', 'ANIME', 'EPISODE', 'USER', 'WARN', 'ERROR'];
 
